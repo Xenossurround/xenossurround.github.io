@@ -2,155 +2,210 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>MatterXXenosMC|2DEngine</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <title>2DEngine</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <style>
     html, body {
-      margin: 0; padding: 0;
-      width: 100vw; height: 100vh;
       background: #eef;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      min-height: 100vh;
+      min-width: 100vw;
+      user-select: none;
       overflow: hidden;
-      font-family: 'Segoe UI', 'Arial', sans-serif;
-      -webkit-user-select: none; user-select: none;
-      touch-action: none;
+      font-family: 'Segoe UI', 'Arial', 'PingFang SC', 'Hiragino Sans', sans-serif;
     }
     #appcontainer {
       width: 100vw;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: stretch;
+      align-items: center;
       justify-content: flex-start;
+      touch-action: none;
     }
     #topbar {
-      width: 100vw;
-      max-width: 900px;
-      margin: 8px auto 0 auto;
+      width: 98vw;
+      max-width: 980px;
+      margin: 22px auto 6px;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 0 10px;
+      justify-content: space-between;
+      gap: 6px;
+      font-family: inherit;
+      flex-wrap: wrap;
     }
     #fps {
-      font-size: 14px;
+      font-size: 16px;
       color: #444;
       background: #fff7;
-      padding: 3px 11px 3px 11px;
+      padding: 4px 13px 4px 17px;
       border-radius: 4px;
       font-family: monospace;
-      min-width: 66px;
+      letter-spacing: 1px;
+      min-width: 72px;
+      margin-right: 6px;
     }
     #toolbar {
-      width: 100vw;
-      overflow-x: auto;
       display: flex;
-      gap: 8px;
+      gap: 7px;
+      flex-wrap: wrap;
       align-items: center;
-      justify-content: flex-start;
-      background: #dde3ef;
-      padding: 6px 0 8px 0;
-      scrollbar-width: thin;
-      border-top: 1.5px solid #b2c6e6;
-      border-bottom: 1.5px solid #b2c6e6;
     }
-    #toolbar button, #toolbar input[type=button] {
-      padding: 13px 15px;
+    #toolbar button,
+    #toolbar input[type=button] {
+      min-width: 52px;
+      padding: 9px 15px;
       border: none;
-      border-radius: 7px;
-      background: #e1eaf7;
+      border-radius: 6px;
+      background: #dde3ef;
       color: #222;
       font-size: 17px;
       cursor: pointer;
-      margin: 0 0 0 8px;
-      min-width: 62px;
-      transition: background 0.18s;
       outline: none;
-      flex-shrink: 0;
+      transition: background 0.13s, color 0.13s, transform 0.08s;
+      margin-bottom: 4px;
+      box-shadow: 0 1px 4px #dde6ee80;
+      touch-action: manipulation;
+      user-select: none;
     }
-    #toolbar button.active {
-      background: #3678e2;
+    #toolbar button.active,
+    #toolbar button:active,
+    #toolbar input[type=button]:active {
+      background: #3885e8;
       color: #fff;
+      transform: scale(0.96);
+      box-shadow: 0 2px 8px #7cbaff50;
     }
     #toolbar input[type=button] {
-      background: #db6565;
+      background: #e65d5d;
       color: #fff;
       font-weight: bold;
-      margin-left: 12px;
+      margin-left: 10px;
     }
-    #scene-wrap {
-      flex: 1 1 0;
-      min-height: 0;
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #dde6ee;
+    #canvas-wrap {
       position: relative;
-      overflow: hidden;
+      margin: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 90vw;
+      min-height: 300px;
+      background: #dde6ee;
+      border-radius: 8px;
+      box-shadow: 0 2px 18px #bbb7;
+      width: 92vw;
+      max-width: 980px;
+      height: 60vw;
+      max-height: 630px;
       touch-action: none;
     }
     #scene {
-      display: block;
-      width: 96vw;
-      height: 63vw;
-      max-width: 900px;
-      max-height: 74vw;
-      min-width: 210px;
-      min-height: 170px;
-      border-radius: 8px;
       background: #eef;
-      border: 2.5px solid #8eb6e6;
-      box-shadow: 0 1px 12px #aaa4;
-      margin: 0 auto;
+      display: block;
+      border-radius: 5px;
+      box-shadow: 0 0 4px #aaa4;
+      border: 1.5px solid #8eb6e6;
+      transition: box-shadow 0.13s, border 0.13s;
+      outline: none;
+      cursor: crosshair;
       touch-action: none;
+      width: 100%;
+      height: 100%;
+      max-width: 950px;
+      max-height: 600px;
+      /* 覆盖物理像素，防止拉伸变形 */
+    }
+    #resize-handle {
+      position: absolute;
+      right: 0; bottom: 0;
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, #8eb6e6 75%, #fff6 100%);
+      border-bottom-right-radius: 7px;
+      cursor: nwse-resize;
+      z-index: 10;
+      box-shadow: 1px 1px 8px #ccc8;
+      touch-action: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      font-size: 24px;
+      color: #69a;
+      user-select: none;
+    }
+    #resize-handle::after {
+      content: "↘";
+      font-size: 20px;
+      color: #69a;
+      opacity: 0.7;
+      margin: 0 2px 2px 0;
+      pointer-events: none;
+      user-select: none;
     }
     #poly-modal-bg {
-      position: fixed; left:0;top:0;width:100vw;height:100vh;
-      background: #0007;
+      position: fixed;
+      left:0;top:0;width:100vw;height:100vh;
+      background: #0006;
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 99;
+      touch-action: none;
     }
     #poly-modal {
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 32px #0006;
-      padding: 10px 13px 10px 13px;
-      min-width: 180px; min-height: 180px;
-      display: flex; flex-direction: column; align-items: center;
+      border-radius: 8px;
+      box-shadow: 0 2px 18px #0005;
+      padding: 18px 24px 12px 24px;
+      min-width: 240px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: none;
+      max-width: 95vw;
+      max-height: 95vh;
     }
     #poly-title {
-      font-size: 17px; font-weight: bold; color: #357; margin-bottom: 7px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #357;
+      margin-bottom: 10px;
+      margin-top: 6px;
     }
     #poly-canvas {
-      border: 2px solid #8eb6e6;
+      border: 1.5px solid #8eb6e6;
       background: #f5f8fd;
-      border-radius: 7px;
-      margin-bottom: 8px;
+      border-radius: 6px;
+      margin-bottom: 13px;
       display: block;
+      cursor: crosshair;
       box-shadow: 0 0 8px #bbb3;
-      width: 170px;
-      height: 170px;
       touch-action: none;
+      width: 260px; height: 260px;
+      max-width: 78vw;
+      max-height: 60vw;
     }
     #poly-btns {
       display: flex;
       gap: 10px;
       margin-top: 8px;
-      width: 100%;
-      justify-content: center;
+      flex-wrap: wrap;
     }
     #poly-btns button {
-      background: #3678e2;
+      background: #3b8eea;
       color: #fff;
       border: none;
-      border-radius: 5px;
-      padding: 8px 17px;
+      border-radius: 4px;
+      padding: 7px 16px;
       font-size: 15px;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.13s;
+      margin-bottom: 3px;
+      min-width: 66px;
+      touch-action: manipulation;
     }
     #poly-btns button.secondary {
       background: #dde3ef;
@@ -162,21 +217,26 @@
       cursor: not-allowed;
     }
     #poly-tip {
-      font-size: 13px;
-      color: #4a6;
-      margin-bottom: 4px;
-      margin-top: -1px;
+      font-size: 14px;
+      color: #36a85a;
+      margin-bottom: 7px;
+      margin-top: -4px;
       text-align: center;
+      max-width: 220px;
     }
-    @media (max-width: 600px) {
-      #scene { width: 99vw; height: 56vw; min-height: 100px; }
-      #poly-canvas { width: 120px; height: 120px; }
-      #poly-title { font-size: 15px;}
+    @media (max-width: 650px) {
+      #topbar { max-width: 99vw; width: 99vw; font-size: 15px;}
+      #toolbar button, #toolbar input[type=button] { font-size: 16px; min-width: 44px; padding: 8px 10px; }
+      #canvas-wrap { width: 99vw; min-width: 98vw; max-width: 99vw; }
+      #scene { max-width: 99vw; }
+      #poly-canvas { width: 90vw; height: 55vw; max-width: 90vw; }
     }
-    @media (max-width: 380px) {
-      #scene { min-width: 80vw; }
-      #poly-canvas { width: 80px; height: 80px; }
-      #poly-title { font-size: 13px;}
+    @media (max-width: 480px) {
+      #topbar { font-size: 14px;}
+      #toolbar button, #toolbar input[type=button] { font-size: 15px; min-width: 38px; padding: 7px 6px;}
+      #scene { max-width: 97vw;}
+      #canvas-wrap { width: 99vw; min-width: 98vw; }
+      #poly-canvas { width: 97vw; height: 48vw; }
     }
   </style>
 </head>
@@ -184,30 +244,30 @@
 <div id="appcontainer">
   <div id="topbar">
     <span id="fps">FPS: --</span>
+    <div id="toolbar">
+      <button data-shape="rectangle" class="active">矩形</button>
+      <button data-shape="circle">圆形</button>
+      <button data-shape="polygon3">三角形</button>
+      <button data-shape="polygon4">正方形</button>
+      <button data-shape="polygon5">五边形</button>
+      <button data-shape="polygon6">六边形</button>
+      <button data-shape="trapezoid">梯形</button>
+      <button data-shape="star">星形</button>
+      <button data-shape="compound">复合</button>
+      <button id="poly-btn" data-shape="custompoly">自定义多边形</button>
+      <input type="button" id="clear-btn" value="一键清空">
+    </div>
   </div>
-  <div id="toolbar">
-    <button data-shape="rectangle" class="active">矩形</button>
-    <button data-shape="circle">圆形</button>
-    <button data-shape="polygon3">三角形</button>
-    <button data-shape="polygon4">正方形</button>
-    <button data-shape="polygon5">五边形</button>
-    <button data-shape="polygon6">六边形</button>
-    <button data-shape="trapezoid">梯形</button>
-    <button data-shape="star">星形</button>
-    <button data-shape="compound">复合</button>
-    <button id="poly-btn" data-shape="custompoly">多边形</button>
-    <input type="button" id="clear-btn" value="清空">
-  </div>
-  <div id="scene-wrap">
-    <canvas id="scene" width="345" height="210" tabindex="0"></canvas>
+  <div id="canvas-wrap">
+    <canvas id="scene" width="780" height="540" tabindex="0"></canvas>
+    <div id="resize-handle"></div>
   </div>
 </div>
-<!-- 多边形绘制弹窗 -->
 <div id="poly-modal-bg">
   <div id="poly-modal">
-    <div id="poly-title">自定义多边形</div>
-    <canvas id="poly-canvas" width="120" height="120"></canvas>
-    <div id="poly-tip">点触添加点，长按撤销，双击闭合。完成后生成刚体。</div>
+    <div id="poly-title">自定义多边形绘制</div>
+    <canvas id="poly-canvas" width="260" height="260"></canvas>
+    <div id="poly-tip">轻触添加点，双击/双指点按闭合，双指长按撤销，完成后点“完成”</div>
     <div id="poly-btns">
       <button id="poly-finish">完成</button>
       <button id="poly-cancel" class="secondary">取消</button>
@@ -219,30 +279,30 @@
 <script>
 const { Engine, Render, Runner, Composite, Bodies, Body, Vertices, Mouse, MouseConstraint, Events, Query } = Matter;
 
-// ========== 画布自适应 ==========
-const wrap = document.getElementById('scene-wrap');
 const canvas = document.getElementById('scene');
-function resizeCanvas() {
-  // 宽高基于窗口
-  let w = Math.floor(Math.max(210, Math.min(window.innerWidth * 0.98, 900)));
-  let h = Math.floor(Math.max(130, Math.min(window.innerHeight * 0.56, 700)));
+const wrap = document.getElementById('canvas-wrap');
+const resizeHandle = document.getElementById('resize-handle');
+let CANVAS_W = canvas.width, CANVAS_H = canvas.height;
+let isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+function setCanvasSize(w, h) {
   canvas.width = w;
   canvas.height = h;
-  return {w, h};
-}
-let {w:CANVAS_W, h:CANVAS_H} = resizeCanvas();
-window.addEventListener('resize', function() {
-  const r = resizeCanvas();
-  CANVAS_W = r.w; CANVAS_H = r.h;
-  render.options.width = CANVAS_W;
-  render.options.height = CANVAS_H;
+  wrap.style.width = w + 'px';
+  wrap.style.height = h + 'px';
+  CANVAS_W = w;
+  CANVAS_H = h;
+  render.options.width = w;
+  render.options.height = h;
   Render.setPixelRatio(render, window.devicePixelRatio);
-  Composite.remove(world, walls);
-  walls = createWalls(CANVAS_W, CANVAS_H);
-  Composite.add(world, walls);
-});
+}
+if (isMobile) {
+  // 初始更适配
+  setCanvasSize(Math.min(window.innerWidth*0.99, 430), Math.min(window.innerHeight*0.6, 420));
+} else {
+  setCanvasSize(780, 540);
+}
 
-// ========== 物理引擎 ==========
 const engine = Engine.create();
 const world = engine.world;
 const render = Render.create({
@@ -261,7 +321,7 @@ Render.run(render);
 const runner = Runner.create();
 Runner.run(runner, engine);
 
-// ========== FPS ==========
+// FPS统计
 let fps = 0, frameCount = 0, lastFpsUpdate = Date.now();
 function updateFps() {
   frameCount++;
@@ -278,7 +338,6 @@ function updateFps() {
   requestAnimationFrame(fpsLoop);
 })();
 
-// ========== 墙体 ==========
 const thickness = 40;
 function createWalls(w, h) {
   let arr = [
@@ -293,7 +352,7 @@ function createWalls(w, h) {
 let walls = createWalls(CANVAS_W, CANVAS_H);
 Composite.add(world, walls);
 
-// ========== 工具栏 ==========
+// 工具栏逻辑
 const toolbar = document.getElementById('toolbar');
 let currentShape = "rectangle";
 toolbar.addEventListener('click', e => {
@@ -305,6 +364,7 @@ toolbar.addEventListener('click', e => {
   }
 });
 document.getElementById('clear-btn').onclick = () => {
+  // 只删除所有非墙体和非鼠标约束
   Composite.allBodies(world)
     .filter(b => b.label !== "wall" && b.label !== 'Mouse Constraint')
     .forEach(b => Composite.remove(world, b));
@@ -314,7 +374,7 @@ function resetToolbarBtn() {
   toolbar.querySelector('button[data-shape="'+currentShape+'"]')?.classList.add('active');
 }
 
-// ========== 物体类型 ==========
+// 物体生成
 function createBody(shape, x, y, customPolyVerts) {
   switch(shape) {
     case "rectangle":
@@ -332,6 +392,7 @@ function createBody(shape, x, y, customPolyVerts) {
     case "trapezoid":
       return Bodies.trapezoid(x, y, 92, 50, 0.6, { restitution: 0.45, friction: 0.16 });
     case "star": {
+      // 五角星
       const pts = [];
       const R1 = 40, R2 = 16;
       for (let i = 0; i < 10; ++i) {
@@ -362,147 +423,156 @@ function createBody(shape, x, y, customPolyVerts) {
   }
 }
 
-// ========== PC/移动端事件统一 ==========
-function getPointerXY(e, rect) {
-  if (e.touches && e.touches.length) {
-    return {
-      x: e.touches[0].clientX - rect.left,
-      y: e.touches[0].clientY - rect.top
-    };
-  } else {
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  }
-}
-
+// 鼠标/触控交互
 let isDragging = false, dragBody = null, dragOffset = { x:0, y:0 };
+let dragPointerId = null;
+let touchLongPressTimer = null, touchStartTime = 0, touchMoved = false, touchStart = null;
 
-// ---- 主画布交互 ----
-function findBodyAt(x, y) {
+function pointerPos(e) {
+  if (e.touches && e.touches.length>0)
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  else if (e.changedTouches && e.changedTouches.length>0)
+    return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  else
+    return { x: e.clientX, y: e.clientY };
+}
+function getBodyAt(x, y) {
   return Query.point(Composite.allBodies(world), {x, y})
     .find(b => b.label !== "wall" && b.label !== "Mouse Constraint");
 }
 
-// 通用生成物体
-function spawnBody(x, y) {
-  if (currentShape === 'custompoly') return;
-  if (findBodyAt(x, y)) return;
-  const body = createBody(currentShape, x, y);
-  if (body) Composite.add(world, body);
-}
-
-// 通用拖拽
-function startDrag(x, y) {
-  const found = findBodyAt(x, y);
-  if (found) {
-    isDragging = true;
-    dragBody = found;
-    dragOffset = { x: x - found.position.x, y: y - found.position.y };
-    Body.setStatic(dragBody, true);
-  }
-}
-function moveDrag(x, y) {
-  if (isDragging && dragBody) {
-    Body.setPosition(dragBody, { x: x - dragOffset.x, y: y - dragOffset.y });
-    Body.setVelocity(dragBody, { x: 0, y: 0 });
-    Body.setAngularVelocity(dragBody, 0);
-  }
-}
-function endDrag() {
-  if (isDragging && dragBody) {
-    Body.setStatic(dragBody, false);
-    dragBody = null;
-    isDragging = false;
-  }
-}
-
-// 通用删除
-function removeBody(x, y) {
-  const found = findBodyAt(x, y);
-  if (found) Composite.remove(world, found);
-}
-
-// ---- 鼠标事件 ----
+// 桌面端
 canvas.addEventListener('mousedown', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  const {x, y} = getPointerXY(e, rect);
-  if (e.button === 0) {
-    spawnBody(x, y);
-  } else if (e.button === 2) {
-    startDrag(x, y);
+  if (e.button === 0 && !isMobile) { // 左键生成
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (currentShape === 'custompoly') return;
+    // 检查是否有物体
+    if (getBodyAt(x, y)) return;
+    const body = createBody(currentShape, x, y);
+    if (body) Composite.add(world, body);
+  } else if (e.button === 2 && !isMobile) { // 右键拖拽
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const found = getBodyAt(x, y);
+    if (found) {
+      isDragging = true;
+      dragBody = found;
+      dragOffset = { x: x - found.position.x, y: y - found.position.y };
+      Body.setStatic(dragBody, true);
+    }
     e.preventDefault();
-  } else if (e.button === 1) {
-    removeBody(x, y);
+  } else if (e.button === 1 && !isMobile) { // 中键删除
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const found = getBodyAt(x, y);
+    if (found) Composite.remove(world, found);
     e.preventDefault();
   }
 });
 canvas.addEventListener('mousemove', function(e) {
   if (!isDragging) return;
   const rect = canvas.getBoundingClientRect();
-  const {x, y} = getPointerXY(e, rect);
-  moveDrag(x, y);
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if (dragBody) {
+    Body.setPosition(dragBody, { x: x - dragOffset.x, y: y - dragOffset.y });
+    Body.setVelocity(dragBody, { x: 0, y: 0 });
+    Body.setAngularVelocity(dragBody, 0);
+  }
 });
-canvas.addEventListener('mouseup', endDrag);
-canvas.addEventListener('mouseleave', endDrag);
+canvas.addEventListener('mouseup', function() {
+  if (isDragging && dragBody) {
+    Body.setStatic(dragBody, false);
+    dragBody = null;
+    isDragging = false;
+  }
+});
+canvas.addEventListener('mouseleave', function() {
+  if (isDragging && dragBody) {
+    Body.setStatic(dragBody, false);
+    dragBody = null;
+    isDragging = false;
+  }
+});
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-// ---- 触摸事件 ----
-let touchDrag = false, touchDragBody = null, touchStartXY = null, touchDragId = null, longTapTimer = null;
+// 手机端触控
 canvas.addEventListener('touchstart', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  const {x, y} = getPointerXY(e, rect);
-  touchStartXY = {x, y, time: Date.now()};
-  // 生成物体（短触）
-  longTapTimer = setTimeout(()=>{
+  if (!isMobile) return;
+  // 单指：生成或拖拽。长按删除
+  if (e.touches.length === 1) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    const found = getBodyAt(x, y);
+    touchMoved = false;
+    touchStart = {x, y};
     // 长按删除
-    removeBody(x, y);
-    longTapTimer = null;
-  }, 500);
-  // 拖拽
-  touchDragBody = findBodyAt(x, y);
-  if (touchDragBody) {
-    touchDrag = true;
-    dragBody = touchDragBody;
-    dragOffset = { x: x - dragBody.position.x, y: y - dragBody.position.y };
-    Body.setStatic(dragBody, true);
-    touchDragId = e.changedTouches[0].identifier;
-  }
-  e.preventDefault();
-}, {passive:false});
-canvas.addEventListener('touchmove', function(e) {
-  if (longTapTimer) { clearTimeout(longTapTimer); longTapTimer = null; }
-  if (!touchDrag) return;
-  let touch = null;
-  for (let i=0;i<e.changedTouches.length;i++) {
-    if (touchDragId==null || e.changedTouches[i].identifier === touchDragId) {
-      touch = e.changedTouches[i]; break;
+    touchLongPressTimer = setTimeout(function(){
+      if (getBodyAt(x, y)) {
+        Composite.remove(world, getBodyAt(x, y));
+      }
+    }, 520); // 0.5秒长按
+    touchStartTime = Date.now();
+    if (found) {
+      isDragging = true;
+      dragBody = found;
+      dragOffset = { x: x - found.position.x, y: y - found.position.y };
+      dragPointerId = e.touches[0].identifier;
+      Body.setStatic(dragBody, true);
+    } else {
+      // 新建
+      if (currentShape !== 'custompoly') {
+        const body = createBody(currentShape, x, y);
+        if (body) Composite.add(world, body);
+      }
     }
   }
-  if (!touch) return;
+}, {passive:false});
+canvas.addEventListener('touchmove', function(e) {
+  if (!isMobile) return;
+  touchMoved = true;
+  clearTimeout(touchLongPressTimer);
+  if (!isDragging) return;
   const rect = canvas.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-  moveDrag(x, y);
-  e.preventDefault();
-}, {passive:false});
-canvas.addEventListener('touchend', function(e) {
-  if (longTapTimer) {
-    clearTimeout(longTapTimer);
-    longTapTimer = null;
-    // 这是普通轻点，生成物体
-    if (touchStartXY && !findBodyAt(touchStartXY.x, touchStartXY.y))
-      spawnBody(touchStartXY.x, touchStartXY.y);
+  let idx = 0;
+  for (let i=0;i<e.touches.length;i++) {
+    if (e.touches[i].identifier === dragPointerId) { idx = i; break;}
   }
-  endDrag();
-  touchDrag = false;
-  touchDragBody = null;
-  touchDragId = null;
-  touchStartXY = null;
-}, {passive:false});
+  const x = e.touches[idx].clientX - rect.left;
+  const y = e.touches[idx].clientY - rect.top;
+  if (dragBody) {
+    Body.setPosition(dragBody, { x: x - dragOffset.x, y: y - dragOffset.y });
+    Body.setVelocity(dragBody, { x: 0, y: 0 });
+    Body.setAngularVelocity(dragBody, 0);
+  }
+});
+canvas.addEventListener('touchend', function(e) {
+  if (!isMobile) return;
+  clearTimeout(touchLongPressTimer);
+  if (isDragging && dragBody) {
+    Body.setStatic(dragBody, false);
+    dragBody = null;
+    isDragging = false;
+    dragPointerId = null;
+  }
+});
+canvas.addEventListener('touchcancel', function(e) {
+  if (!isMobile) return;
+  clearTimeout(touchLongPressTimer);
+  if (isDragging && dragBody) {
+    Body.setStatic(dragBody, false);
+    dragBody = null;
+    isDragging = false;
+    dragPointerId = null;
+  }
+});
 
-// ========== 鼠标拖拽约束（仅用于高亮）==========
+// 鼠标拖拽约束（用于高亮）
 const mouse = Mouse.create(canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
   mouse: mouse,
@@ -511,12 +581,11 @@ const mouseConstraint = MouseConstraint.create(engine, {
 Composite.add(world, mouseConstraint);
 render.mouse = mouse;
 
-// ========== 鼠标悬停高亮 ==========
+// 高亮物体
 Events.on(render, 'afterRender', function() {
-  const mousePos = mouse.position;
-  const found = findBodyAt(mousePos.x, mousePos.y);
+  const mousePos = isMobile ? touchStart || {x:-1000,y:-1000} : mouse.position;
+  const found = getBodyAt(mousePos.x, mousePos.y);
   if (found) {
-    const ctx = render.context;
     ctx.save();
     ctx.strokeStyle = "#3b8eea";
     ctx.lineWidth = 3;
@@ -535,13 +604,70 @@ Events.on(render, 'afterRender', function() {
   }
 });
 
-// ========== 自定义多边形弹窗 ==========
+// 画布拖拽缩放（支持触控&鼠标）
+let resizing = false, resizeStart = null, origRect = null;
+let resizeTouchId = null;
+resizeHandle.addEventListener('mousedown', function(e){
+  resizing = true;
+  resizeStart = { x: e.clientX, y: e.clientY };
+  origRect = { w: wrap.offsetWidth, h: wrap.offsetHeight };
+  document.body.style.cursor = 'nwse-resize';
+  e.preventDefault();
+});
+resizeHandle.addEventListener('touchstart', function(e){
+  resizing = true;
+  resizeTouchId = e.touches[0].identifier;
+  resizeStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  origRect = { w: wrap.offsetWidth, h: wrap.offsetHeight };
+  e.preventDefault();
+}, {passive:false});
+function doResize(x, y) {
+  let dx = x - resizeStart.x;
+  let dy = y - resizeStart.y;
+  let newW = Math.max(280, origRect.w + dx);
+  let newH = Math.max(180, origRect.h + dy);
+  setCanvasSize(newW-20, newH-20);
+  // 重新创建墙
+  Composite.remove(world, walls);
+  walls = createWalls(CANVAS_W, CANVAS_H);
+  Composite.add(world, walls);
+}
+document.addEventListener('mousemove', function(e){
+  if (!resizing) return;
+  doResize(e.clientX, e.clientY);
+});
+document.addEventListener('touchmove', function(e){
+  if (!resizing) return;
+  let i = 0;
+  for(;i<e.touches.length;i++) {
+    if (e.touches[i].identifier === resizeTouchId) break;
+  }
+  if (i === e.touches.length) return;
+  doResize(e.touches[i].clientX, e.touches[i].clientY);
+}, {passive:false});
+document.addEventListener('mouseup', function(e){
+  if (resizing) {
+    resizing = false;
+    document.body.style.cursor = '';
+  }
+});
+document.addEventListener('touchend', function(e){
+  if (resizing) {
+    resizing = false;
+    document.body.style.cursor = '';
+    resizeTouchId = null;
+  }
+}, {passive:false});
+
+// --------------------- 自定义多边形弹窗，支持触控 ------------------
 const polyModalBg = document.getElementById('poly-modal-bg');
 const polyModal = document.getElementById('poly-modal');
 const polyCanvas = document.getElementById('poly-canvas');
 const polyCtx = polyCanvas.getContext('2d');
 let polyPoints = [];
 let polyFinished = false;
+let polyTouchStart = null, polyTouchTimer = null, polyTouchCount = 0;
+
 function showPolyModal() {
   polyPoints = [];
   polyFinished = false;
@@ -558,15 +684,14 @@ function drawPolyCanvas() {
   // 辅助线
   polyCtx.save();
   polyCtx.strokeStyle = '#eef';
-  polyCtx.lineWidth = 1.2;
-  for(let i=1;i<polyCanvas.width;i+=40){
+  polyCtx.lineWidth = 1.1;
+  for(let i=1;i<polyCanvas.width;i+=34){
     polyCtx.beginPath();
     polyCtx.moveTo(i,0); polyCtx.lineTo(i,polyCanvas.height); polyCtx.stroke();
     polyCtx.beginPath();
     polyCtx.moveTo(0,i); polyCtx.lineTo(polyCanvas.width,i); polyCtx.stroke();
   }
   polyCtx.restore();
-  // 画多边形
   if (polyPoints.length) {
     polyCtx.save();
     polyCtx.beginPath();
@@ -575,10 +700,9 @@ function drawPolyCanvas() {
       polyCtx.lineTo(polyPoints[i].x, polyPoints[i].y);
     if (polyFinished && polyPoints.length>2) polyCtx.closePath();
     polyCtx.strokeStyle = '#3b8eea';
-    polyCtx.lineWidth = 2.2;
+    polyCtx.lineWidth = 2.1;
     polyCtx.stroke();
     polyCtx.restore();
-    // 画点
     polyCtx.save();
     polyPoints.forEach((p,i) => {
       polyCtx.beginPath();
@@ -586,66 +710,93 @@ function drawPolyCanvas() {
       polyCtx.fillStyle = i==0 ? '#e63' : '#2d7';
       polyCtx.fill();
       polyCtx.strokeStyle = '#fff';
-      polyCtx.lineWidth = 1.5;
+      polyCtx.lineWidth = 1.1;
       polyCtx.stroke();
     });
     polyCtx.restore();
   }
 }
-// 鼠标/触摸添加点、撤销、闭合
-function polyAddPoint(x,y) { polyPoints.push({x,y}); drawPolyCanvas(); }
-function polyUndoPoint() { polyPoints.pop(); drawPolyCanvas(); }
+function polyCanvasAddPoint(x, y) {
+  polyPoints.push({x, y});
+  drawPolyCanvas();
+}
+function polyCanvasUndoPoint() {
+  polyPoints.pop();
+  drawPolyCanvas();
+}
 polyCanvas.addEventListener('mousedown', function(e) {
   if (polyFinished) return;
-  const rect = polyCanvas.getBoundingClientRect();
-  const {x, y} = getPointerXY(e, rect);
-  if (e.button === 0) polyAddPoint(x, y);
-  else if (e.button === 2) { polyUndoPoint(); e.preventDefault(); }
+  if (e.button === 0) {
+    const rect = polyCanvas.getBoundingClientRect();
+    polyCanvasAddPoint(e.clientX-rect.left, e.clientY-rect.top);
+  }
 });
 polyCanvas.addEventListener('dblclick', function(e) {
   if (polyPoints.length<3) return;
   polyFinished = true;
   drawPolyCanvas();
 });
-polyCanvas.addEventListener('contextmenu', e => e.preventDefault());
-// 触摸多边形绘制
-let polyTouchLongTapTimer = null;
-polyCanvas.addEventListener('touchstart', function(e){
+polyCanvas.addEventListener('contextmenu', e => { polyCanvasUndoPoint(); e.preventDefault(); });
+
+// 手机端触控
+polyCanvas.addEventListener('touchstart', function(e) {
   if (polyFinished) return;
+  polyTouchCount = e.touches.length;
   const rect = polyCanvas.getBoundingClientRect();
-  const {x, y} = getPointerXY(e, rect);
-  polyTouchLongTapTimer = setTimeout(()=>{ polyUndoPoint(); polyTouchLongTapTimer=null; }, 430);
-  polyCanvas._lastTouch = {x, y, time: Date.now()};
-  e.preventDefault();
-},{passive:false});
-polyCanvas.addEventListener('touchmove', function(e){
-  if(polyTouchLongTapTimer) { clearTimeout(polyTouchLongTapTimer); polyTouchLongTapTimer=null;}
-},{passive:false});
-polyCanvas.addEventListener('touchend', function(e){
-  if(polyTouchLongTapTimer) {
-    clearTimeout(polyTouchLongTapTimer); polyTouchLongTapTimer=null;
-    const {x, y} = polyCanvas._lastTouch || {};
-    if (typeof x === 'number' && typeof y === 'number') polyAddPoint(x, y);
+  if (e.touches.length === 1) {
+    polyTouchStart = {x: e.touches[0].clientX-rect.left, y: e.touches[0].clientY-rect.top};
+    polyTouchTimer = setTimeout(function(){
+      // 长按无事
+    }, 450);
   }
-  polyCanvas._lastTouch = null;
-},{passive:false});
-// 移动端双击闭合
-let polyLastTap=0;
-polyCanvas.addEventListener('touchend', function(e){
-  let now = Date.now();
-  if(now-polyLastTap<320) {
-    if (polyPoints.length>=3) { polyFinished=true; drawPolyCanvas(); }
-    polyLastTap=0;
-  } else { polyLastTap=now; }
-},{passive:false});
+  else if (e.touches.length === 2) {
+    // 双指：撤销最后一个点
+    polyCanvasUndoPoint();
+    e.preventDefault();
+  }
+});
+polyCanvas.addEventListener('touchend', function(e) {
+  if (polyFinished) return;
+  if (polyTouchCount === 1 && e.changedTouches.length === 1) {
+    // 单指轻触加点
+    if (polyTouchStart) {
+      polyCanvasAddPoint(polyTouchStart.x, polyTouchStart.y);
+      polyTouchStart = null;
+    }
+  }
+  if (e.touches.length === 0) {
+    clearTimeout(polyTouchTimer);
+    polyTouchCount = 0;
+  }
+});
+polyCanvas.addEventListener('touchmove', function(e) {
+  clearTimeout(polyTouchTimer);
+});
+polyCanvas.addEventListener('dblclick', function(e) {
+  if (polyPoints.length<3) return;
+  polyFinished = true;
+  drawPolyCanvas();
+});
+polyCanvas.addEventListener('touchstart', function(e){
+  if (!polyFinished && e.touches.length === 2) {
+    // 双指点按闭合
+    if (polyPoints.length >= 3) {
+      polyFinished = true;
+      drawPolyCanvas();
+    }
+    e.preventDefault();
+  }
+});
 document.getElementById('poly-finish').onclick = function(){
   if (polyPoints.length<3) {
     alert('需要至少3个点才能生成多边形');
     return;
   }
+  // 计算中心点映射到主画布中心
   const cx = polyPoints.reduce((a,b)=>a+b.x,0)/polyPoints.length;
   const cy = polyPoints.reduce((a,b)=>a+b.y,0)/polyPoints.length;
-  const x = CANVAS_W/2, y = CANVAS_H/2;
+  const x = CANVAS_W/2;
+  const y = CANVAS_H/2;
   const mapped = polyPoints.map(p => ({x:p.x-cx,y:p.y-cy}));
   const body = createBody('custompoly', x, y, mapped.map(p=>({x:p.x,y:p.y})));
   if (body) Composite.add(world, body);
@@ -661,6 +812,16 @@ document.addEventListener('keydown', function(e){
   if (polyModalBg.style.display === 'flex' && e.key === "Escape") {
     closePolyModal();
   }
+});
+
+window.addEventListener('resize', function(){
+  // 保持画布最大宽度适配
+  let w = Math.min(window.innerWidth*0.98, 940);
+  let h = Math.min(window.innerHeight*0.64, 600);
+  setCanvasSize(w, h);
+  Composite.remove(world, walls);
+  walls = createWalls(CANVAS_W, CANVAS_H);
+  Composite.add(world, walls);
 });
 </script>
 </body>
