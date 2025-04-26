@@ -1,27 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <title>资源下载中心</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Program Download</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="header">
-    <h1 class="title">Welcome to Program Hub</h1>
-    <p class="subtitle">Download the latest version of our software</p>
+  <header>
+    <div class="logo">资源下载中心</div>
+    <nav>
+      <a href="#home">首页</a>
+      <a href="#resources">资源库</a>
+      <a href="#about">关于我们</a>
+      <a href="#contact">联系</a>
+    </nav>
   </header>
-
   <main>
-    <section class="download-section">
-      <button class="download-button" onclick="startDownload()">Download Now</button>
+    <section class="hero" id="home">
+      <div class="hero-content">
+        <h1>高效、安全的资源下载站</h1>
+        <p>在这里，您可以快速搜索、预览并下载优质资源</p>
+        <form id="search-form">
+          <input type="text" id="search-input" placeholder="搜索资源...">
+          <button type="submit">搜索</button>
+        </form>
+      </div>
+      <div class="hero-animation"></div>
+    </section>
+    <section class="resources" id="resources">
+      <h2>热门资源</h2>
+      <div class="resource-list" id="resource-list">
+        <!-- 动态生成资源卡片 -->
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </section>
+    <section class="about" id="about">
+      <h2>关于我们</h2>
+      <p>我们致力于为用户提供最新、最丰富的资源下载服务，所有资源均经过人工审核，确保安全无毒。</p>
+    </section>
+    <section class="contact" id="contact">
+      <h2>联系我们</h2>
+      <form class="contact-form">
+        <input type="text" placeholder="您的姓名" required>
+        <input type="email" placeholder="您的邮箱" required>
+        <textarea placeholder="您的留言" required></textarea>
+        <button type="submit">发送</button>
+      </form>
     </section>
   </main>
-
-  <footer class="footer">
-    <p>&copy; 2025 Program Hub. All rights reserved.</p>
+  <footer>
+    <p>&copy; 2025 资源下载中心. 保留所有权利.</p>
   </footer>
-
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="modal-close">&times;</span>
+      <h3 id="modal-title"></h3>
+      <p id="modal-desc"></p>
+      <a id="modal-download" href="#" class="download-btn" download>立即下载</a>
+    </div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
