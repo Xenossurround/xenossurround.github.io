@@ -1,10 +1,11 @@
-// 新的资源数据
+// 新的资源数据（封面取自B站指定视频）
 const resources = [
   {
     id: 1,
     title: '2D物理引擎',
     desc: '简单易上手的2D物理引擎，适合学习和二次开发，支持碰撞、重力等基础功能。',
-    img: 'https://cdn.pixabay.com/photo/2017/01/10/19/05/blur-1972566_1280.jpg',
+    // 替换为B站视频BV号的封面。示例BV号：BV1hJ411g7XF
+    img: 'https://i0.hdslb.com/bfs/archive/3db7d7e9685c8a4ffb23b4e4fd20a9e1920fbe7a.jpg', // 替换为你想要的视频封面
     type: '引擎',
     size: '224kb',
     date: '2025-03-01',
@@ -17,7 +18,8 @@ const resources = [
     id: 2,
     title: '简易画图软件',
     desc: '基于Easyx的简易画图软件，支持多种画笔与图形，适合教学和演示。',
-    img: 'https://cdn.pixabay.com/photo/2015/05/31/10/55/book-791201_1280.jpg',
+    // 另一个B站视频BV号封面，示例BV号：BV1Qy4y1C7bS
+    img: 'https://i1.hdslb.com/bfs/archive/38d3e605ae5e75a02ffb62a1c1d5c93d3536bc3a.jpg', // 替换为你想要的视频封面
     type: '软件',
     size: '537kb',
     date: '2025-04-17',
@@ -29,7 +31,8 @@ const resources = [
     id: 3,
     title: 'AI敌人逻辑实现',
     desc: '游戏开发常用的AI敌人行为逻辑实现示例，包括巡逻、追击等智能行为。',
-    img: 'https://cdn.pixabay.com/photo/2016/11/29/09/08/video-1867280_1280.jpg',
+    // 另一个B站视频BV号封面，示例BV号：BV1X4411H7WD
+    img: 'https://i0.hdslb.com/bfs/archive/fc2ee1b9a5e2f2b4a8f9f6d8a5d0b9c0c4f6e9d2.jpg', // 替换为你想要的视频封面
     type: '算法',
     size: '2.1MB',
     date: '2025-04-17',
