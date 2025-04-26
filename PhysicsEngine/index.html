@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Matter.js 多物体演示（移动端适配）</title>
+  <title>Matter.js 多物体演示（修正版，支持移动与桌面）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1,user-scalable=no">
   <style>
     html, body {
@@ -396,6 +396,28 @@ function createBody(shape, x, y, customPolyVerts) {
   }
 }
 
+// 坐标换算，支持高DPI/缩放
+function getCanvasPos(e, targetCanvas = canvas) {
+  const rect = targetCanvas.getBoundingClientRect();
+  let clientX, clientY;
+  if (e.touches && e.touches.length) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else if (e.changedTouches && e.changedTouches.length) {
+    clientX = e.changedTouches[0].clientX;
+    clientY = e.changedTouches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
 // --------- 桌面端/移动端点击&拖拽&删除 -----------
 // 移动端：单指点击生成，长按拖拽，双指点击删除
 // 桌面端：左键生成，右键拖拽，中键删除
@@ -412,17 +434,13 @@ function getBodyAt(x, y) {
 
 // 桌面事件
 canvas.addEventListener('mousedown', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const {x, y} = getCanvasPos(e);
   if (e.button === 0) { // 左键生成
     if (currentShape === 'custompoly') return;
     if (Composite.allBodies(world).length > maxBodies+8) return;
     if (getBodyAt(x, y)) return;
     const body = createBody(currentShape, x, y);
     if (body) Composite.add(world, body);
-    // 视觉点击反馈
-    showRipple(canvas, x, y);
   } else if (e.button === 2) { // 右键拖拽
     const found = getBodyAt(x, y);
     if (found) {
@@ -440,9 +458,7 @@ canvas.addEventListener('mousedown', function(e) {
 });
 canvas.addEventListener('mousemove', function(e) {
   if (!isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const {x, y} = getCanvasPos(e);
   if (dragBody) {
     Body.setPosition(dragBody, { x: x - dragOffset.x, y: y - dragOffset.y });
     Body.setVelocity(dragBody, { x: 0, y: 0 });
@@ -468,20 +484,15 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 // ----------- 移动端触控事件 ---------
 canvas.addEventListener('touchstart', function(e) {
   if (!e.targetTouches.length) return;
-  const rect = canvas.getBoundingClientRect();
+  const {x, y} = getCanvasPos(e);
   // 双指：删除刚体
   if (e.targetTouches.length === 2) {
-    const x = e.targetTouches[0].clientX - rect.left;
-    const y = e.targetTouches[0].clientY - rect.top;
     const found = getBodyAt(x, y);
     if (found) Composite.remove(world, found);
     return;
   }
   // 单指
   const touch = e.targetTouches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
   // 长按拖拽
   dragLongPressTimer = setTimeout(()=>{
     const found = getBodyAt(x, y);
@@ -504,9 +515,7 @@ canvas.addEventListener('touchmove', function(e) {
   for (let i=0;i<e.changedTouches.length;i++) {
     const t = e.changedTouches[i];
     if (t.identifier === dragTouchId) {
-      const rect = canvas.getBoundingClientRect();
-      const x = t.clientX - rect.left;
-      const y = t.clientY - rect.top;
+      const {x, y} = getCanvasPos(t);
       if (dragBody) {
         Body.setPosition(dragBody, { x: x - dragOffset.x, y: y - dragOffset.y });
         Body.setVelocity(dragBody, { x: 0, y: 0 });
@@ -529,38 +538,15 @@ canvas.addEventListener('touchend', function(e) {
     const now = Date.now();
     if (now - lastTouchTime < 350) return; // 防止多次tap
     lastTouchTime = now;
-    const t = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = t.clientX - rect.left;
-    const y = t.clientY - rect.top;
+    const {x, y} = getCanvasPos(e);
     if (currentShape === 'custompoly') return;
     if (Composite.allBodies(world).length > maxBodies+8) return;
     if (getBodyAt(x, y)) return;
     const body = createBody(currentShape, x, y);
     if (body) Composite.add(world, body);
-    showRipple(canvas, x, y);
   }
   dragStart = null;
 });
-
-// 视觉点击水波反馈
-function showRipple(target, x, y) {
-  const ripple = document.createElement('div');
-  ripple.style.position = 'absolute';
-  ripple.style.pointerEvents = 'none';
-  ripple.style.left = (x-18)+'px';
-  ripple.style.top = (y-18)+'px';
-  ripple.style.width = ripple.style.height = '36px';
-  ripple.style.borderRadius = '50%';
-  ripple.style.background = 'rgba(60,144,234,0.23)';
-  ripple.style.opacity = '0.95';
-  ripple.style.transition = 'all 0.55s cubic-bezier(.4,.2,.2,1)';
-  ripple.style.zIndex = '99';
-  ripple.style.transform = 'scale(0.5)';
-  target.parentElement.appendChild(ripple);
-  setTimeout(()=>{ ripple.style.transform='scale(2.2)'; ripple.style.opacity='0'; },10);
-  setTimeout(()=>ripple.remove(),510);
-}
 
 // 鼠标拖拽约束（仅用于高亮）
 const mouse = Mouse.create(canvas);
@@ -701,10 +687,8 @@ function drawPolyCanvas() {
 }
 // 桌面
 polyCanvas.addEventListener('mousedown', function(e) {
+  const {x, y} = getCanvasPos(e, polyCanvas);
   if (polyFinished) return;
-  const rect = polyCanvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
   if (e.button === 0) { // 左键加点
     polyPoints.push({x,y});
     drawPolyCanvas();
@@ -723,10 +707,7 @@ polyCanvas.addEventListener('dblclick', function(e) {
 // 手机
 polyCanvas.addEventListener('touchstart', function(e) {
   if (polyFinished) return;
-  const rect = polyCanvas.getBoundingClientRect();
-  const t = e.touches[0];
-  const x = t.clientX - rect.left;
-  const y = t.clientY - rect.top;
+  const {x, y} = getCanvasPos(e, polyCanvas);
   polyLongPressTimer = setTimeout(()=>{ // 长按撤销
     polyPoints.pop();
     drawPolyCanvas();
