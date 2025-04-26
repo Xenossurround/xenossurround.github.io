@@ -6,20 +6,20 @@ const resources = [
     desc: '简单易上手的2D物理引擎，适合学习和二次开发，支持碰撞、重力等基础功能。',
     img: 'https://cdn.pixabay.com/photo/2017/01/10/19/05/blur-1972566_1280.jpg',
     type: '引擎',
-    size: '2.1MB',
-    date: '2025-04-17',
+    size: '224kb',
+    date: '2025-03-01',
     downloadLinks: [
-      { label: '链接一', url: 'https://www.123912.com/s/5F9LVv-FaI7' },
-      { label: '链接二', url: 'https://github.com/Xenossurround/Simple-2D-Physics-Engine' }
+      { label: '链接一(123pan)', url: 'https://www.123912.com/s/5F9LVv-FaI7' },
+      { label: '链接二(Github)', url: 'https://github.com/Xenossurround/Simple-2D-Physics-Engine' }
     ]
   },
   {
     id: 2,
     title: '简易画图软件',
-    desc: '基于Canvas的简易画图软件，支持多种画笔与图形，适合教学和演示。',
+    desc: '基于Easyx的简易画图软件，支持多种画笔与图形，适合教学和演示。',
     img: 'https://cdn.pixabay.com/photo/2015/05/31/10/55/book-791201_1280.jpg',
     type: '软件',
-    size: '1.3MB',
+    size: '537kb',
     date: '2025-04-17',
     downloadLinks: [
       { label: '链接一', url: 'https://github.com/Xenossurround/Simple-Drawer' }
@@ -31,7 +31,7 @@ const resources = [
     desc: '游戏开发常用的AI敌人行为逻辑实现示例，包括巡逻、追击等智能行为。',
     img: 'https://cdn.pixabay.com/photo/2016/11/29/09/08/video-1867280_1280.jpg',
     type: '算法',
-    size: '1.6MB',
+    size: '2.1MB',
     date: '2025-04-17',
     downloadLinks: [
       { label: '链接一', url: 'https://github.com/Xenossurround/AIEnemy' }
