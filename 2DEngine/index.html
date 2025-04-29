@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <title>2DEngine</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <link rel="stylesheet" href="style.css" />
   <style>
     #ui-panel.dragging { opacity: 0.92; cursor: move; }
     #ui-panel .drag-handle {
       cursor: move;
-      color: #00aaff;
+      color: #ffffff;
       font-size: 16px;
       font-weight: bold;
       margin-bottom: 7px;
@@ -27,15 +28,57 @@
     #bg-color-picker {margin-left: 2px; width: 28px; height: 28px; border:none; border-radius:6px; background:#fff; cursor:pointer;}
     .help-tip {font-size: 11px; color: #888; margin-top: 0; margin-bottom: 3px; line-height: 1.1;}
     #world-canvas { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; display: block; z-index: 1; }
-    #ui-panel { position: absolute; z-index: 10; min-width: 320px; }
+    #ui-panel { position: absolute; z-index: 10; min-width: 320px; transition: all .25s; }
+    /* 移动端响应式样式 */
+    @media (max-width: 800px), (pointer: coarse) {
+      #ui-panel {
+        left: 0 !important;
+        right: 0;
+        top: auto !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        min-width: 0 !important;
+        max-width: 100vw !important;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -2px 16px rgba(0,0,0,0.24);
+        padding-bottom: env(safe-area-inset-bottom,20px);
+        background: #f8faffee;
+        font-size: 18px;
+      }
+      #ui-panel .drag-handle {
+        cursor: pointer !important;
+        justify-content: center;
+        font-size: 19px;
+        padding-top: 6px;
+        padding-bottom: 2px;
+      }
+      .param-fields input[type="number"] {
+        width: 70px;
+        font-size: 18px;
+        padding: 6px 8px;
+      }
+      #ui-panel .group, .param-fields {
+        font-size: 17px;
+        margin-bottom: 7px;
+        gap: 12px 14px;
+      }
+      #ui-panel button, #ui-panel input[type="color"], #ui-panel select {
+        font-size: 17px;
+        min-height: 38px;
+        min-width: 38px;
+        border-radius: 8px;
+      }
+      #ui-panel select { min-width: 110px;}
+      #ui-panel { touch-action: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="ui-panel" style="left:18px;top:18px;">
+  <div id="ui-panel">
     <div class="drag-handle" id="ui-drag-handle">
       <span class="move-ico">&#x2630;</span>
       XenosMC
-      <span class="logo" style="margin-left:auto;">引擎核心：Matter</span>
+      <span class="logo" style="margin-left:auto;">引擎核心：Matter.js</span>
     </div>
     <div class="group">
       <select id="shape-type">
@@ -72,21 +115,100 @@
 
   <script src="matter.js"></script>
   <script>
+  // 设备检测和面板自适应
+  function isMobile() {
+    return /Android|iPhone|iPad|iPod|Mobile|Tablet|Phone|Mobi/i.test(navigator.userAgent) || window.innerWidth <= 800;
+  }
+  function setPanelInitialPosition() {
+    var uiPanel = document.getElementById('ui-panel');
+    if(isMobile()) {
+      uiPanel.style.left = "0";
+      uiPanel.style.right = "0";
+      uiPanel.style.bottom = "0";
+      uiPanel.style.top = "auto";
+    } else {
+      uiPanel.style.left = "18px";
+      uiPanel.style.top = "18px";
+      uiPanel.style.bottom = "auto";
+      uiPanel.style.right = "auto";
+    }
+  }
+  setPanelInitialPosition();
+  window.addEventListener('resize', setPanelInitialPosition);
+
+  // 拖动面板支持，自适应
+  (function() {
+    let uiPanel = document.getElementById('ui-panel');
+    let dragHandle = document.getElementById('ui-drag-handle');
+    let dragging = false, offsetX = 0, offsetY = 0;
+    if(isMobile()) {
+      // 移动端：点击收起/展开面板
+      let collapsed = false;
+      dragHandle.addEventListener('click', function() {
+        collapsed = !collapsed;
+        if(collapsed) {
+          uiPanel.style.transform = "translateY(85%)";
+          uiPanel.style.opacity = "0.27";
+        } else {
+          uiPanel.style.transform = "translateY(0)";
+          uiPanel.style.opacity = "1";
+        }
+      });
+      dragHandle.style.cursor = "pointer";
+    } else {
+      dragHandle.addEventListener('mousedown', function(e) {
+        dragging = true;
+        uiPanel.classList.add('dragging');
+        let rect = uiPanel.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        let nx = e.clientX - offsetX;
+        let ny = e.clientY - offsetY;
+        nx = Math.max(0, Math.min(window.innerWidth-uiPanel.offsetWidth, nx));
+        ny = Math.max(0, Math.min(window.innerHeight-uiPanel.offsetHeight, ny));
+        uiPanel.style.left = nx + "px";
+        uiPanel.style.top = ny + "px";
+      });
+      document.addEventListener('mouseup', function() {
+        if (dragging) {
+          dragging = false;
+          uiPanel.classList.remove('dragging');
+        }
+      });
+      dragHandle.addEventListener('click', e=>e.stopPropagation());
+    }
+    uiPanel.addEventListener('mousedown', e => e.stopPropagation());
+  })();
+
+  // =========== Matter.js 主逻辑 ===========
   const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
 
   let engine = Engine.create(), world = engine.world;
   let bodies = [], constraints = [], composites = [];
   let currentColor = "#00aaff", isPaused = false, currentShape = "rectangle";
   let uiPanel = document.getElementById('ui-panel');
-  let bgColor = "#ffffff";
+  let bgColor = "#222233";
   const canvas = document.getElementById('world-canvas');
 
-
   function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    render.options.width = window.innerWidth;
-    render.options.height = window.innerHeight;
+    const cssWidth = window.innerWidth;
+    const cssHeight = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+    canvas.style.width = cssWidth + "px";
+    canvas.style.height = cssHeight + "px";
+    render.options.width = canvas.width;
+    render.options.height = canvas.height;
+    render.canvas.width = canvas.width;
+    render.canvas.height = canvas.height;
+    render.canvas.style.width = cssWidth + "px";
+    render.canvas.style.height = cssHeight + "px";
     setBgColor(bgColor);
   }
   window.addEventListener('resize', resizeCanvas);
@@ -95,8 +217,8 @@
     canvas: canvas,
     engine: engine,
     options: {
-      width: window.innerWidth,
-      height: window.innerHeight,
+      width: window.innerWidth * (window.devicePixelRatio || 1),
+      height: window.innerHeight * (window.devicePixelRatio || 1),
       wireframes: false,
       background: bgColor,
       pixelRatio: window.devicePixelRatio,
@@ -116,10 +238,10 @@
   const runner = Runner.create();
   Runner.run(runner, engine);
 
-
   function createBounds() {
-    const thickness = 60;
-    const w = canvas.width, h = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth * dpr, h = window.innerHeight * dpr;
+    const thickness = 60 * dpr;
     return [
       Bodies.rectangle(w/2, h + thickness/2, w, thickness, { isStatic: true, render:{ fillStyle: "#333" } }),
       Bodies.rectangle(w/2, -thickness/2, w, thickness, { isStatic: true, render:{ fillStyle: "#333" } }),
@@ -135,39 +257,34 @@
     World.add(world, bounds);
   });
 
-
   const mouse = Mouse.create(render.canvas);
-  let dragStarted = false;
   let lastPointerDownWasOnBody = false;
-
   const mouseConstraint = MouseConstraint.create(engine, {
     mouse: mouse,
     constraint: { stiffness: 0.18, render: { visible: false } }
   });
   World.add(world, mouseConstraint);
-
   Events.on(mouseConstraint, 'mousedown', function(e) {
-    // e.body 只有在点击到物体上时才有
     lastPointerDownWasOnBody = !!mouseConstraint.body;
   });
-
   canvas.addEventListener('mouseup', function(e) {
     let uiRect = uiPanel.getBoundingClientRect();
     if (
       e.clientX >= uiRect.left && e.clientX <= uiRect.right &&
       e.clientY >= uiRect.top && e.clientY <= uiRect.bottom
     ) return;
-    // Matter.MouseConstraint会先触发mousedown/mouseup事件，再触发startdrag/enddrag
-    // 只有当mousedown没点到物体时，mouseup才允许生成物体
     if (lastPointerDownWasOnBody) {
       lastPointerDownWasOnBody = false;
       return;
     }
-    let rect = canvas.getBoundingClientRect();
-    addShapeAt(e.clientX - rect.left, e.clientY - rect.top);
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    addShapeAt(x, y);
   });
 
-  // 物体参数控件定义 
+  // 物体参数控件定义
   const paramList = {
     rectangle: [
       {name: "width", label: "宽", type: "number", min: 20, max: 300, value: 120},
@@ -374,39 +491,6 @@
     composites = [];
   };
 
-  (function() {
-    let dragging = false, offsetX = 0, offsetY = 0;
-    let dragHandle = document.getElementById('ui-drag-handle');
-    dragHandle.addEventListener('mousedown', function(e) {
-      dragging = true;
-      uiPanel.classList.add('dragging');
-      let rect = uiPanel.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    document.addEventListener('mousemove', function(e) {
-      if (!dragging) return;
-      let nx = e.clientX - offsetX;
-      let ny = e.clientY - offsetY;
-      nx = Math.max(0, Math.min(window.innerWidth-uiPanel.offsetWidth, nx));
-      ny = Math.max(0, Math.min(window.innerHeight-uiPanel.offsetHeight, ny));
-      uiPanel.style.left = nx + "px";
-      uiPanel.style.top = ny + "px";
-    });
-    document.addEventListener('mouseup', function() {
-      if (dragging) {
-        dragging = false;
-        uiPanel.classList.remove('dragging');
-      }
-    });
-    dragHandle.addEventListener('click', e=>e.stopPropagation());
-  })();
-
-  uiPanel.addEventListener('mousedown', e => e.stopPropagation());
-
-  
   Events.on(mouseConstraint, 'startdrag', function(e) {
     if (e.body && !e.body.isStatic) {
       e.body.render.strokeStyle = "#fff";
@@ -420,7 +504,6 @@
     }
   });
 
- 
   resizeCanvas();
   renderParamFields(currentShape);
   </script>
