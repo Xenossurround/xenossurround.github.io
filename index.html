@@ -1,70 +1,443 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>|-XenosMC-|</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Matter.js 2D 物理引擎演示</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    #ui-panel.dragging { opacity: 0.92; cursor: move; }
+    #ui-panel .drag-handle {
+      cursor: move;
+      color: #00aaff;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      user-select: none;
+    }
+    #ui-panel .drag-handle .move-ico {font-size: 18px;}
+    .param-fields {
+      display: flex; flex-wrap: wrap; gap: 8px 10px; margin-bottom:8px; align-items: center;
+    }
+    .param-fields label {font-size: 13px; color: #00557f; margin-right: 2px; font-weight: 500;}
+    .param-fields input[type="number"] {width: 52px; border-radius: 4px; border: 1px solid #aad; padding: 2px 5px;}
+    .param-fields input[type="color"] {width: 28px; height: 28px; padding: 0; border: none;}
+    #bg-color-picker {margin-left: 2px; width: 28px; height: 28px; border:none; border-radius:6px; background:#fff; cursor:pointer;}
+    .help-tip {font-size: 11px; color: #888; margin-top: 0; margin-bottom: 3px; line-height: 1.1;}
+    #world-canvas { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; display: block; z-index: 1; }
+    #ui-panel { position: absolute; z-index: 10; min-width: 320px; }
+  </style>
 </head>
 <body>
-  <header>
-    <div class="logo">XenosMC</div>
-    <nav>
-      <a href="#home">首页</a>
-      <a href="#resources">资源库</a>
-      <a href="#about">关于我们（？</a>
-      <a href="#contact">联系(没什么用)</a>
-    </nav>
-  </header>
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-content">
-        <h1>bilibili_XenosMC</h1>
-        <p>个人主页：https://space.bilibili.com/3493124221438600?spm_id_from=333.1007.0.0</p>
-        <form id="search-form">
-          <input type="text" id="search-input" placeholder="搜索资源...">
-          <button type="submit">搜索</button>
-        </form>
-      </div>
-      <div class="hero-animation"></div>
-    </section>
-    <section class="resources" id="resources">
-      <h2>下载</h2>
-      <div class="resource-list" id="resource-list">
-        <!-- 动态生成资源卡片 -->
-      </div>
-      <div class="pagination" id="pagination"></div>
-    </section>
-    <section class="about" id="about">
-      <h2>关于我们</h2>
-      <p>关注啊—————————</p>
-    </section>
-    <section class="contact" id="contact">
-      <h2>联系我们</h2>
-      <form class="contact-form">
-        <input type="text" placeholder="您的姓名" required>
-        <input type="email" placeholder="您的邮箱" required>
-        <textarea placeholder="您的留言" required></textarea>
-        <button type="submit">发送</button>
-      </form>
-    </section>
-  </main>
-  <footer>
-    <div style="text-align:center; margin: 2em 0;">
-    <a href="2DEngine" class="download-btn" style="font-size:1.15rem; padding:0.7em 2.2em; background:#6C63FF;">2D物理引擎</a>
-  </div>
-  <p>&copy; 2025 资源下载中心. 保留所有权利.</p>
-</footer>
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="modal-close">&times;</span>
-      <h3 id="modal-title"></h3>
-      <p id="modal-desc"></p>
-      <a id="modal-download" href="#" class="download-btn" download>立即下载</a>
+  <div id="ui-panel" style="left:18px;top:18px;">
+    <div class="drag-handle" id="ui-drag-handle">
+      <span class="move-ico">&#x2630;</span>
+      拖动面板
+      <span class="logo" style="margin-left:auto;">Matter.js 2D Demo</span>
+    </div>
+    <div class="group">
+      <select id="shape-type">
+        <option value="rectangle">矩形</option>
+        <option value="circle">圆形</option>
+        <option value="polygon">正多边形</option>
+        <option value="trapezoid">梯形</option>
+        <option value="fromVertices">自定义多边形</option>
+        <option value="composite">复合体</option>
+        <option value="constraint">连杆（约束）</option>
+        <option value="softbody">软体</option>
+      </select>
+      <input type="color" id="color-picker" title="物体颜色" value="#00aaff"/>
+    </div>
+    <div class="param-fields" id="param-fields"></div>
+    <div class="help-tip" id="param-help"></div>
+    <div class="group">
+      <label>重力:
+        <input type="range" id="gravity-slider" min="-2" max="2" step="0.01" value="1"/>
+      </label>
+      <span id="gravity-value">1.00</span>
+      <label style="margin-left:14px;">背景:
+        <input type="color" id="bg-color-picker" title="背景颜色" value="#222233"/>
+      </label>
+    </div>
+    <div class="group">
+      <button id="pause-btn">暂停</button>
+      <button id="resume-btn" disabled>恢复</button>
+      <button id="reset-btn">重置场景</button>
+      <button id="clear-btn">清空物体</button>
     </div>
   </div>
-  <script src="script.js"></script>
+  <canvas id="world-canvas"></canvas>
+
+  <script src="matter.js"></script>
+  <script>
+  const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
+
+  let engine = Engine.create(), world = engine.world;
+  let bodies = [], constraints = [], composites = [];
+  let currentColor = "#00aaff", isPaused = false, currentShape = "rectangle";
+  let uiPanel = document.getElementById('ui-panel');
+  let bgColor = "#222233";
+  const canvas = document.getElementById('world-canvas');
+
+  // ====== 背景色和高DPI适配 ======
+  function resizeCanvas() {
+    const cssWidth = window.innerWidth;
+    const cssHeight = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+    canvas.style.width = cssWidth + "px";
+    canvas.style.height = cssHeight + "px";
+    render.options.width = canvas.width;
+    render.options.height = canvas.height;
+    render.canvas.width = canvas.width;
+    render.canvas.height = canvas.height;
+    render.canvas.style.width = cssWidth + "px";
+    render.canvas.style.height = cssHeight + "px";
+    setBgColor(bgColor);
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  const render = Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+      width: window.innerWidth * (window.devicePixelRatio || 1),
+      height: window.innerHeight * (window.devicePixelRatio || 1),
+      wireframes: false,
+      background: bgColor,
+      pixelRatio: window.devicePixelRatio,
+    }
+  });
+  Render.run(render);
+
+  function setBgColor(color) {
+    bgColor = color;
+    render.options.background = bgColor;
+    render.canvas.style.background = bgColor;
+    Render.stop(render); Render.run(render);
+  }
+  document.getElementById('bg-color-picker').oninput = e => setBgColor(e.target.value);
+  setBgColor(bgColor);
+
+  const runner = Runner.create();
+  Runner.run(runner, engine);
+
+  // ====== 边界墙体（需高DPI适配）======
+  function createBounds() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth * dpr, h = window.innerHeight * dpr;
+    const thickness = 60 * dpr;
+    return [
+      Bodies.rectangle(w/2, h + thickness/2, w, thickness, { isStatic: true, render:{ fillStyle: "#333" } }),
+      Bodies.rectangle(w/2, -thickness/2, w, thickness, { isStatic: true, render:{ fillStyle: "#333" } }),
+      Bodies.rectangle(-thickness/2, h/2, thickness, h, { isStatic: true, render:{ fillStyle: "#333" } }),
+      Bodies.rectangle(w+thickness/2, h/2, thickness, h, { isStatic: true, render:{ fillStyle: "#333" } }),
+    ];
+  }
+  let bounds = createBounds();
+  World.add(world, bounds);
+  window.addEventListener('resize', () => {
+    World.remove(world, bounds);
+    bounds = createBounds();
+    World.add(world, bounds);
+  });
+
+  // ====== 拖拽支持 + 拖动物体时不生成物体 ======
+  const mouse = Mouse.create(render.canvas);
+  let lastPointerDownWasOnBody = false;
+
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: { stiffness: 0.18, render: { visible: false } }
+  });
+  World.add(world, mouseConstraint);
+
+  // 记录mousedown时是否点在了物体上
+  Events.on(mouseConstraint, 'mousedown', function(e) {
+    lastPointerDownWasOnBody = !!mouseConstraint.body;
+  });
+
+  // 生成物体逻辑：mouseup发生在canvas上，且不是拖动物体（即mousedown时没点到物体）
+  canvas.addEventListener('mouseup', function(e) {
+    let uiRect = uiPanel.getBoundingClientRect();
+    if (
+      e.clientX >= uiRect.left && e.clientX <= uiRect.right &&
+      e.clientY >= uiRect.top && e.clientY <= uiRect.bottom
+    ) return;
+    // Matter.MouseConstraint会先触发mousedown/mouseup事件，再触发startdrag/enddrag
+    // 只有当mousedown没点到物体时，mouseup才允许生成物体
+    if (lastPointerDownWasOnBody) {
+      lastPointerDownWasOnBody = false;
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    addShapeAt(x, y);
+  });
+
+  // ====== 物体参数控件定义 ======
+  const paramList = {
+    rectangle: [
+      {name: "width", label: "宽", type: "number", min: 20, max: 300, value: 120},
+      {name: "height", label: "高", type: "number", min: 20, max: 200, value: 70},
+      {name: "angle", label: "角度", type: "number", min: 0, max: 360, value: 0, step:1},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
+      {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.1, step:0.01},
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.3, step:0.01}
+    ],
+    circle: [
+      {name: "radius", label: "半径", type: "number", min: 10, max: 120, value: 45},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
+      {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.05, step:0.01},
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.45, step:0.01}
+    ],
+    polygon: [
+      {name: "sides", label: "边数", type: "number", min:3, max:12, value:5, step:1},
+      {name: "radius", label: "半径", type: "number", min:10, max:80, value:36},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
+      {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.08, step:0.01},
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.4, step:0.01}
+    ],
+    trapezoid: [
+      {name: "width", label: "上宽", type: "number", min:30, max:200, value:120},
+      {name: "height", label: "高", type: "number", min:20, max:120, value:60},
+      {name: "slope", label: "斜率", type: "number", min:0.2, max:1, value:0.5, step:0.01},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
+      {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.12, step:0.01},
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.38, step:0.01}
+    ],
+    fromVertices: [
+      {name: "scale", label: "缩放", type: "number", min:0.2, max:2, value:1, step:0.01},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
+      {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.15, step:0.01},
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.36, step:0.01}
+    ],
+    composite: [
+      {name: "balls", label: "球数", type: "number", min:3, max:9, value:5, step:1},
+      {name: "radius", label: "球半径", type: "number", min:8, max:40, value:20},
+      {name: "distance", label: "距离", type: "number", min:60, max:300, value:120},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001}
+    ],
+    constraint: [
+      {name: "len", label: "长度", type: "number", min:30, max:300, value:120},
+      {name: "radius", label: "球半径", type: "number", min:10, max:50, value:25},
+      {name: "stiffness", label: "刚度", type: "number", min:0.01, max:1, value:0.06, step:0.01},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001}
+    ],
+    softbody: [
+      {name: "columns", label: "列数", type: "number", min:2, max:10, value:7, step:1},
+      {name: "rows", label: "行数", type: "number", min:2, max:8, value:3, step:1},
+      {name: "xgap", label: "横间隔", type: "number", min:2, max:30, value:10},
+      {name: "ygap", label: "纵间隔", type: "number", min:2, max:30, value:10},
+      {name: "radius", label: "球半径", type: "number", min:6, max:30, value:10},
+      {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001}
+    ]
+  };
+  const paramHelpTxt = {
+    rectangle: "矩形可设置宽高、角度、密度、摩擦、弹性。",
+    circle: "圆形可设置半径、密度、摩擦、弹性。",
+    polygon: "多边形可设置边数、半径、密度、摩擦、弹性。",
+    trapezoid: "梯形可设置宽、高、斜率、密度、摩擦、弹性。",
+    fromVertices: "自定义多边形为五角星，可缩放。",
+    composite: "牛顿摆复合体，可设置球数、半径、距离、密度。",
+    constraint: "连杆约束为两个球之间的弹簧，可设置长度、球半径、刚度。",
+    softbody: "软体网格，可设置行列、间隔、球半径、密度。"
+  };
+
+  function renderParamFields(type) {
+    let params = paramList[type] || [];
+    let pf = document.getElementById('param-fields');
+    pf.innerHTML = "";
+    params.forEach(p => {
+      let input = document.createElement('input');
+      input.type = p.type;
+      input.id = "param-" + p.name;
+      input.value = p.value;
+      if(p.min !== undefined) input.min = p.min;
+      if(p.max !== undefined) input.max = p.max;
+      if(p.step !== undefined) input.step = p.step;
+      let label = document.createElement('label');
+      label.innerText = p.label;
+      label.htmlFor = input.id;
+      pf.appendChild(label);
+      pf.appendChild(input);
+    });
+    document.getElementById('param-help').innerText = paramHelpTxt[type] || "";
+  }
+  renderParamFields(currentShape);
+  document.getElementById('shape-type').onchange = function() {
+    currentShape = this.value;
+    renderParamFields(currentShape);
+  };
+
+  function getField(name, type=null) {
+    let v = document.getElementById('param-' + name);
+    if(!v) return undefined;
+    if(type==="int") return parseInt(v.value);
+    if(type==="float") return parseFloat(v.value);
+    return v.value ? Number(v.value) : undefined;
+  }
+  function addShapeAt(x, y) {
+    let type = document.getElementById('shape-type').value;
+    let color = document.getElementById('color-picker').value;
+    let shape, params = paramList[type] || [], opt = {};
+    params.forEach(p=>{ opt[p.name] = getField(p.name); });
+    if(type==="rectangle") {
+      shape = Bodies.rectangle(x, y, opt.width, opt.height, {
+        angle: (opt.angle||0) * Math.PI/180,
+        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+        render: { fillStyle: color }
+      });
+      bodies.push(shape); World.add(world, shape);
+    } else if(type==="circle") {
+      shape = Bodies.circle(x, y, opt.radius, {
+        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+        render: { fillStyle: color },
+      });
+      bodies.push(shape); World.add(world, shape);
+    } else if(type==="polygon") {
+      shape = Bodies.polygon(x, y, Math.max(3,opt.sides), opt.radius, {
+        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+        render: { fillStyle: color }
+      });
+      bodies.push(shape); World.add(world, shape);
+    } else if(type==="trapezoid") {
+      shape = Bodies.trapezoid(x, y, opt.width, opt.height, opt.slope, {
+        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+        render: { fillStyle: color }
+      });
+      bodies.push(shape); World.add(world, shape);
+    } else if(type==="fromVertices") {
+      let verts = Vertices.fromPath("0 30 12 12 30 0 12 -12 0 -30 -12 -12 -30 0 -12 12");
+      let scaled = verts.map(v => ({x: v.x*opt.scale, y: v.y*opt.scale}));
+      shape = Bodies.fromVertices(x, y, scaled, {
+        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+        render: { fillStyle: color }
+      }, true);
+      bodies.push(shape); World.add(world, shape);
+    } else if(type==="composite") {
+      let cradle = Composites.newtonsCradle(x, y, Math.max(3,opt.balls), opt.radius, opt.distance);
+      Composite.allBodies(cradle).forEach(b=>{
+        b.render.fillStyle = color;
+        b.density = opt.density;
+      });
+      composites.push(cradle); World.add(world, cradle);
+    } else if(type==="constraint") {
+      let ballA = Bodies.circle(x, y, opt.radius, { density: opt.density, render: { fillStyle: color } });
+      let ballB = Bodies.circle(x+opt.len, y, opt.radius, { density: opt.density, render: { fillStyle: color } });
+      let link = Constraint.create({
+        bodyA: ballA, bodyB: ballB,
+        stiffness: opt.stiffness, length: opt.len,
+        render: { strokeStyle: "#fff", lineWidth: 3 }
+      });
+      bodies.push(ballA, ballB); constraints.push(link);
+      World.add(world, [ballA, ballB, link]);
+    } else if(type==="softbody") {
+      let soft = Composites.softBody(x, y, Math.max(2,opt.columns), Math.max(2,opt.rows), opt.xgap, opt.ygap, false, opt.radius,
+        function(xx,yy) {
+          return Bodies.circle(xx,yy,opt.radius,{density: opt.density, render:{fillStyle: color}});
+        });
+      composites.push(soft); World.add(world, soft);
+    }
+  }
+
+  // ====== 其它UI逻辑 ======
+  document.getElementById('color-picker').oninput = e => { currentColor = e.target.value; };
+  document.getElementById('gravity-slider').oninput = function() {
+    const g = parseFloat(this.value);
+    engine.world.gravity.y = g;
+    document.getElementById('gravity-value').innerText = g.toFixed(2);
+  };
+  document.getElementById('gravity-value').innerText = engine.world.gravity.y.toFixed(2);
+
+  document.getElementById('pause-btn').onclick = () => {
+    if (!isPaused) {
+      Runner.stop(runner);
+      isPaused = true;
+      document.getElementById('pause-btn').disabled = true;
+      document.getElementById('resume-btn').disabled = false;
+    }
+  };
+  document.getElementById('resume-btn').onclick = () => {
+    if (isPaused) {
+      Runner.run(runner, engine);
+      isPaused = false;
+      document.getElementById('pause-btn').disabled = false;
+      document.getElementById('resume-btn').disabled = true;
+    }
+  };
+  document.getElementById('reset-btn').onclick = () => {
+    bodies.forEach(b => World.remove(world, b));
+    constraints.forEach(c => World.remove(world, c));
+    composites.forEach(cmp => World.remove(world, cmp));
+    bodies = [];
+    constraints = [];
+    composites = [];
+  };
+  document.getElementById('clear-btn').onclick = () => {
+    bodies.forEach(b => World.remove(world, b));
+    constraints.forEach(c => World.remove(world, c));
+    composites.forEach(cmp => World.remove(world, cmp));
+    bodies = [];
+    constraints = [];
+    composites = [];
+  };
+
+  // ====== 面板可拖动 ======
+  (function() {
+    let dragging = false, offsetX = 0, offsetY = 0;
+    let dragHandle = document.getElementById('ui-drag-handle');
+    dragHandle.addEventListener('mousedown', function(e) {
+      dragging = true;
+      uiPanel.classList.add('dragging');
+      let rect = uiPanel.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      let nx = e.clientX - offsetX;
+      let ny = e.clientY - offsetY;
+      nx = Math.max(0, Math.min(window.innerWidth-uiPanel.offsetWidth, nx));
+      ny = Math.max(0, Math.min(window.innerHeight-uiPanel.offsetHeight, ny));
+      uiPanel.style.left = nx + "px";
+      uiPanel.style.top = ny + "px";
+    });
+    document.addEventListener('mouseup', function() {
+      if (dragging) {
+        dragging = false;
+        uiPanel.classList.remove('dragging');
+      }
+    });
+    dragHandle.addEventListener('click', e=>e.stopPropagation());
+  })();
+
+  uiPanel.addEventListener('mousedown', e => e.stopPropagation());
+
+  // ====== 拖拽物体高亮 ======
+  Events.on(mouseConstraint, 'startdrag', function(e) {
+    if (e.body && !e.body.isStatic) {
+      e.body.render.strokeStyle = "#fff";
+      e.body.render.lineWidth = 4;
+    }
+  });
+  Events.on(mouseConstraint, 'enddrag', function(e) {
+    if (e.body && !e.body.isStatic) {
+      e.body.render.strokeStyle = null;
+      e.body.render.lineWidth = null;
+    }
+  });
+
+  // ====== 初始化 ======
+  resizeCanvas();
+  renderParamFields(currentShape);
+  </script>
 </body>
 </html>
