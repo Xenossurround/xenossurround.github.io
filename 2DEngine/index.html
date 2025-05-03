@@ -75,6 +75,30 @@
       left: 0; top: 0; width: 100vw; height: 100vh;
       z-index: 8; pointer-events: none;
     }
+    /* 用户体验优化：面板半透明自动收缩 */
+    #ui-panel.inactive {
+      opacity: 0.5 !important;
+      transition: opacity 0.3s;
+    }
+    /* 物体属性弹窗 */
+    #attr-modal-bg {
+      position: fixed; left:0; top:0; width:100vw; height:100vh; z-index:99; background:rgba(0,0,0,0.18); display:none;
+    }
+    #attr-modal {
+      position: absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      background: #fff; border-radius:8px; box-shadow:0 4px 32px rgba(0,0,0,0.18);
+      padding: 22px 32px 18px 32px; min-width:280px; min-height:80px; z-index:100;
+      font-size: 16px; color: #123;
+      display: none;
+    }
+    #attr-modal label {display: block;margin-bottom:8px;}
+    #attr-modal input[type="number"] {width: 80px;}
+    #attr-modal .close-btn {position:absolute; right:13px; top:10px; font-size:22px; color:#aaa; cursor:pointer;}
+    #attr-modal .del-btn {background:#e44; color:#fff; border:none; border-radius:5px; padding:7px 18px; margin-top:14px; cursor:pointer;}
+    #save-load-btns {margin-left:8px;}
+    #save-btn, #load-btn {background:#fff;color:#00aaff;border:1px solid #00aaff;border-radius:5px;padding:5px 12px;font-size:15px;cursor:pointer;margin-right:4px;}
+    #save-btn:hover, #load-btn:hover {background:#00aaff;color:#fff;}
+    /* 动能/重心文本（canvas渲染，不用CSS） */
   </style>
 </head>
 <body>
@@ -107,19 +131,35 @@
       <label style="margin-left:14px;">背景:
         <input type="color" id="bg-color-picker" title="背景颜色" value="#222233"/>
       </label>
+      <span id="save-load-btns">
+        <button id="save-btn">保存场景</button>
+        <button id="load-btn">导入场景</button>
+        <input type="file" id="file-input" style="display:none">
+      </span>
     </div>
     <div class="group">
       <button id="pause-btn">暂停</button>
       <button id="resume-btn" disabled>恢复</button>
       <button id="reset-btn">重置场景</button>
       <button id="clear-btn">清空物体</button>
+      <button id="delete-btn" disabled>删除选中</button>
+      <label style="margin-left:6px;"><input type="checkbox" id="energy-toggle"> 动能/重心</label>
     </div>
     <div class="group">
       <label><input type="checkbox" id="batch-mode"> 批量填充</label>
       <label>方块边长:
         <input type="number" id="batch-size" min="10" max="100" value="30" style="width:52px;">
       </label>
+      <label style="margin-left:14px;"><input type="checkbox" id="group-mode"> 分组多选</label>
     </div>
+  </div>
+  <div id="attr-modal-bg"></div>
+  <div id="attr-modal">
+    <span class="close-btn" id="attr-modal-close">&times;</span>
+    <form id="attr-form">
+      <div id="attr-fields"></div>
+      <button type="button" class="del-btn" id="attr-del-btn">删除此物体</button>
+    </form>
   </div>
   <canvas id="world-canvas"></canvas>
   <canvas id="selection-canvas"></canvas>
@@ -149,6 +189,7 @@
     let uiPanel = document.getElementById('ui-panel');
     let dragHandle = document.getElementById('ui-drag-handle');
     let dragging = false, offsetX = 0, offsetY = 0;
+    let dragRAF = null;
     if(isMobile()) {
       let collapsed = false;
       dragHandle.addEventListener('click', function() {
@@ -174,12 +215,16 @@
       });
       document.addEventListener('mousemove', function(e) {
         if (!dragging) return;
-        let nx = e.clientX - offsetX;
-        let ny = e.clientY - offsetY;
-        nx = Math.max(0, Math.min(window.innerWidth-uiPanel.offsetWidth, nx));
-        ny = Math.max(0, Math.min(window.innerHeight-uiPanel.offsetHeight, ny));
-        uiPanel.style.left = nx + "px";
-        uiPanel.style.top = ny + "px";
+        if (dragRAF) return;
+        dragRAF = requestAnimationFrame(function() {
+          dragRAF = null;
+          let nx = e.clientX - offsetX;
+          let ny = e.clientY - offsetY;
+          nx = Math.max(0, Math.min(window.innerWidth-uiPanel.offsetWidth, nx));
+          ny = Math.max(0, Math.min(window.innerHeight-uiPanel.offsetHeight, ny));
+          uiPanel.style.left = nx + "px";
+          uiPanel.style.top = ny + "px";
+        });
       });
       document.addEventListener('mouseup', function() {
         if (dragging) {
@@ -190,9 +235,23 @@
       dragHandle.addEventListener('click', e=>e.stopPropagation());
     }
     uiPanel.addEventListener('mousedown', e => e.stopPropagation());
+    // 面板自动半透明
+    let panelTimer = null;
+    let setInactive = function() {
+      uiPanel.classList.add('inactive');
+    };
+    let setActive = function() {
+      uiPanel.classList.remove('inactive');
+      if(panelTimer) clearTimeout(panelTimer);
+      panelTimer = setTimeout(setInactive, 2500);
+    };
+    uiPanel.addEventListener('mouseenter', setActive);
+    uiPanel.addEventListener('mousemove', setActive);
+    uiPanel.addEventListener('mouseleave', setInactive);
+    setTimeout(setInactive, 3000);
   })();
 
-  const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
+  const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices, Query } = Matter;
 
   let engine = Engine.create(), world = engine.world;
   let bodies = [], constraints = [], composites = [];
@@ -201,6 +260,9 @@
   let bgColor = "#222233";
   const canvas = document.getElementById('world-canvas');
   const selectionCanvas = document.getElementById('selection-canvas');
+
+  let selectedBody = null, selectedBodies = [], groupMode = false;
+  let energyEnabled = false;
 
   function resizeCanvas() {
     const cssWidth = window.innerWidth;
@@ -233,6 +295,81 @@
       pixelRatio: window.devicePixelRatio,
     }
   });
+
+  // 动能/重心显示
+  let energyToggle = document.getElementById('energy-toggle');
+  energyToggle.onchange = function() {
+    energyEnabled = this.checked;
+  };
+
+  // 物体高亮/动能重心绘制
+  function customRender() {
+    let ctx = render.context;
+    if(energyEnabled) {
+      for(let b of bodies) {
+        if(b.isStatic) continue;
+        ctx.save();
+        // 动能=0.5*m*v^2
+        let vx = b.velocity.x, vy = b.velocity.y;
+        let m = b.mass;
+        let ke = 0.5 * m * (vx*vx+vy*vy);
+        ctx.font = "bold 15px Arial";
+        ctx.fillStyle = "#e44";
+        ctx.fillText("KE:"+ke.toFixed(2), b.position.x-25, b.position.y-18);
+        ctx.beginPath();
+        ctx.arc(b.position.x, b.position.y, 4, 0, 2*Math.PI);
+        ctx.fillStyle = "#1f6";
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    // 选中高亮
+    if(selectedBody && !groupMode) {
+      ctx.save();
+      ctx.beginPath();
+      let ps = selectedBody.vertices;
+      ctx.moveTo(ps[0].x, ps[0].y);
+      for(let i=1;i<ps.length;i++) ctx.lineTo(ps[i].x, ps[i].y);
+      ctx.closePath();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#ff0";
+      ctx.stroke();
+      ctx.restore();
+    }
+    if(selectedBodies.length && groupMode) {
+      for(let sb of selectedBodies) {
+        ctx.save();
+        ctx.beginPath();
+        let ps = sb.vertices;
+        ctx.moveTo(ps[0].x, ps[0].y);
+        for(let i=1;i<ps.length;i++) ctx.lineTo(ps[i].x, ps[i].y);
+        ctx.closePath();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#ff0";
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    requestAnimationFrame(customRender);
+  }
+  requestAnimationFrame(customRender);
+
+  // 物体创建动画
+  function playCreateAnim(body) {
+    let t = 0;
+    let origScale = 1;
+    function animate() {
+      if(t>1) { Body.scale(body, origScale, origScale); return; }
+      let s = 1 + 0.7*Math.exp(-3*t)*Math.sin(10*t);
+      let nowScale = s/origScale;
+      Body.scale(body, nowScale, nowScale);
+      origScale = s;
+      t += 0.08;
+      requestAnimationFrame(animate);
+    }
+    animate();
+  }
+
   Render.run(render);
 
   function setBgColor(color) {
@@ -320,7 +457,7 @@
   }
 
   selectionCanvas.addEventListener('mousedown', function(e) {
-    if (!batchCheckbox.checked) return;
+    if (!batchCheckbox.checked && !groupMode) return;
     isSelecting = true;
     const rect = selectionCanvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -348,11 +485,24 @@
     const x0 = Math.min(selectStart.x, selectEnd.x), x1 = Math.max(selectStart.x, selectEnd.x);
     const y0 = Math.min(selectStart.y, selectEnd.y), y1 = Math.max(selectStart.y, selectEnd.y);
     const canvasW = canvas.width, canvasH = canvas.height;
-    for(let x = x0 + batchSize/2; x + batchSize/2 <= x1; x += batchSize) {
-      for(let y = y0 + batchSize/2; y + batchSize/2 <= y1; y += batchSize) {
-        if(x - batchSize/2 < 0 || x + batchSize/2 > canvasW || y - batchSize/2 < 0 || y + batchSize/2 > canvasH) continue;
-        addShapeAt(x, y, "rectangle", batchSize, batchSize);
+    if(batchCheckbox.checked) {
+      for(let x = x0 + batchSize/2; x + batchSize/2 <= x1; x += batchSize) {
+        for(let y = y0 + batchSize/2; y + batchSize/2 <= y1; y += batchSize) {
+          if(x - batchSize/2 < 0 || x + batchSize/2 > canvasW || y - batchSize/2 < 0 || y + batchSize/2 > canvasH) continue;
+          let b = addShapeAt(x, y, "rectangle", batchSize, batchSize);
+          playCreateAnim(b);
+        }
       }
+    } else if(groupMode) {
+      selectedBodies = [];
+      let selAABB = {min:{x:x0,y:y0},max:{x:x1,y:y1}};
+      for(let b of bodies) {
+        if(b.isStatic) continue;
+        let bb = b.bounds;
+        if(bb.max.x<selAABB.min.x || bb.min.x>selAABB.max.x || bb.max.y<selAABB.min.y || bb.min.y>selAABB.max.y) continue;
+        selectedBodies.push(b);
+      }
+      document.getElementById('delete-btn').disabled = selectedBodies.length==0;
     }
     clearSelectionRect();
   });
@@ -375,11 +525,13 @@
       lastPointerDownWasOnBody = false;
       return;
     }
+    if(groupMode) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const x = (e.clientX - rect.left) * dpr;
     const y = (e.clientY - rect.top) * dpr;
-    addShapeAt(x, y);
+    let b = addShapeAt(x, y);
+    playCreateAnim(b);
   });
 
   // 物体参数控件定义
@@ -501,24 +653,28 @@
         render: { fillStyle: color }
       });
       bodies.push(shape); World.add(world, shape);
+      return shape;
     } else if(type==="circle") {
       shape = Bodies.circle(x, y, opt.radius, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
         render: { fillStyle: color },
       });
       bodies.push(shape); World.add(world, shape);
+      return shape;
     } else if(type==="polygon") {
       shape = Bodies.polygon(x, y, Math.max(3,opt.sides), opt.radius, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
         render: { fillStyle: color }
       });
       bodies.push(shape); World.add(world, shape);
+      return shape;
     } else if(type==="trapezoid") {
       shape = Bodies.trapezoid(x, y, opt.width, opt.height, opt.slope, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
         render: { fillStyle: color }
       });
       bodies.push(shape); World.add(world, shape);
+      return shape;
     } else if(type==="fromVertices") {
       let verts = Vertices.fromPath("0 30 12 12 30 0 12 -12 0 -30 -12 -12 -30 0 -12 12");
       let scaled = verts.map(v => ({x: v.x*opt.scale, y: v.y*opt.scale}));
@@ -527,6 +683,7 @@
         render: { fillStyle: color }
       }, true);
       bodies.push(shape); World.add(world, shape);
+      return shape;
     } else if(type==="composite") {
       let cradle = Composites.newtonsCradle(x, y, Math.max(3,opt.balls), opt.radius, opt.distance);
       Composite.allBodies(cradle).forEach(b=>{
@@ -551,6 +708,7 @@
         });
       composites.push(soft); World.add(world, soft);
     }
+    return null;
   }
 
   document.getElementById('color-picker').oninput = e => { currentColor = e.target.value; };
@@ -577,21 +735,223 @@
       document.getElementById('resume-btn').disabled = true;
     }
   };
-  document.getElementById('reset-btn').onclick = () => {
+  function clearAllBodies() {
     bodies.forEach(b => World.remove(world, b));
     constraints.forEach(c => World.remove(world, c));
     composites.forEach(cmp => World.remove(world, cmp));
     bodies = [];
     constraints = [];
     composites = [];
+    selectedBody = null;
+    selectedBodies = [];
+    document.getElementById('delete-btn').disabled = true;
+  }
+  document.getElementById('reset-btn').onclick = clearAllBodies;
+  document.getElementById('clear-btn').onclick = clearAllBodies;
+
+  // 分组多选
+  let groupModeCheckbox = document.getElementById('group-mode');
+  groupModeCheckbox.onchange = function() {
+    groupMode = this.checked;
+    selectedBodies = [];
+    selectedBody = null;
+    document.getElementById('delete-btn').disabled = true;
   };
-  document.getElementById('clear-btn').onclick = () => {
-    bodies.forEach(b => World.remove(world, b));
-    constraints.forEach(c => World.remove(world, c));
-    composites.forEach(cmp => World.remove(world, cmp));
-    bodies = [];
-    constraints = [];
-    composites = [];
+
+  // 删除选中物体
+  document.getElementById('delete-btn').onclick = function() {
+    if(groupMode && selectedBodies.length) {
+      for(let b of selectedBodies) {
+        World.remove(world, b);
+        let idx = bodies.indexOf(b); if(idx!==-1) bodies.splice(idx,1);
+      }
+      selectedBodies = [];
+      document.getElementById('delete-btn').disabled = true;
+    } else if(selectedBody) {
+      World.remove(world, selectedBody);
+      let idx = bodies.indexOf(selectedBody); if(idx!==-1) bodies.splice(idx,1);
+      selectedBody = null;
+      document.getElementById('delete-btn').disabled = true;
+    }
+  };
+
+  // 物体属性编辑弹窗
+  let attrModalBg = document.getElementById('attr-modal-bg');
+  let attrModal = document.getElementById('attr-modal');
+  let attrFields = document.getElementById('attr-fields');
+  let attrModalClose = document.getElementById('attr-modal-close');
+  let attrDelBtn = document.getElementById('attr-del-btn');
+  let attrForm = document.getElementById('attr-form');
+  function showAttrModal(body) {
+    attrFields.innerHTML = "";
+    let pos = body.position;
+    let angle = body.angle || 0;
+    let vx = body.velocity ? body.velocity.x : 0, vy = body.velocity ? body.velocity.y : 0;
+    let mass = body.mass || 1;
+    let attrs = [
+      {label:"X", id:"attr-x", value:pos.x, type:"number"},
+      {label:"Y", id:"attr-y", value:pos.y, type:"number"},
+      {label:"角度", id:"attr-angle", value: (angle*180/Math.PI).toFixed(1), type:"number"},
+      {label:"速度X", id:"attr-vx", value: vx, type:"number"},
+      {label:"速度Y", id:"attr-vy", value: vy, type:"number"},
+      {label:"质量", id:"attr-mass", value: mass, type:"number"}
+    ];
+    for(let a of attrs) {
+      let label = document.createElement('label');
+      label.innerText = a.label+":";
+      let input = document.createElement('input');
+      input.type = a.type;
+      input.value = a.value;
+      input.id = a.id;
+      label.appendChild(input);
+      attrFields.appendChild(label);
+    }
+    attrModalBg.style.display = "block";
+    attrModal.style.display = "block";
+    attrModalBody = body;
+  }
+  function hideAttrModal() {
+    attrModalBg.style.display = "none";
+    attrModal.style.display = "none";
+  }
+  attrModalClose.onclick = hideAttrModal;
+  attrModalBg.onclick = hideAttrModal;
+  attrForm.onsubmit = function(e) {e.preventDefault();};
+  attrDelBtn.onclick = function() {
+    if(attrModalBody) {
+      World.remove(world, attrModalBody);
+      let idx = bodies.indexOf(attrModalBody); if(idx!==-1) bodies.splice(idx,1);
+      hideAttrModal();
+      selectedBody = null;
+      document.getElementById('delete-btn').disabled = true;
+    }
+  }
+  let attrModalBody = null;
+  // 确认修改
+  attrForm.addEventListener('change', function(e){
+    if(!attrModalBody) return;
+    let x = parseFloat(document.getElementById('attr-x').value);
+    let y = parseFloat(document.getElementById('attr-y').value);
+    let angle = parseFloat(document.getElementById('attr-angle').value) * Math.PI/180;
+    let vx = parseFloat(document.getElementById('attr-vx').value);
+    let vy = parseFloat(document.getElementById('attr-vy').value);
+    let mass = parseFloat(document.getElementById('attr-mass').value);
+    Body.setPosition(attrModalBody, {x:x, y:y});
+    Body.setAngle(attrModalBody, angle);
+    Body.setVelocity(attrModalBody, {x:vx, y:vy});
+    attrModalBody.mass = mass;
+  });
+
+  // 悬停高亮
+  let lastHoverBody = null;
+  canvas.addEventListener('mousemove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    let found = Query.point(bodies, {x:x,y:y}).find(b=>!b.isStatic);
+    if(lastHoverBody && lastHoverBody!==found) {
+      lastHoverBody.render.strokeStyle = null;
+      lastHoverBody.render.lineWidth = null;
+    }
+    if(found && found!==lastHoverBody) {
+      found.render.strokeStyle = "#0ff";
+      found.render.lineWidth = 4;
+    }
+    lastHoverBody = found;
+  });
+
+  // 左键点击选中/弹窗编辑
+  canvas.addEventListener('mousedown', function(e){
+    if(e.button!==0) return;
+    if(groupMode) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    let found = Query.point(bodies, {x:x,y:y}).find(b=>!b.isStatic);
+    if(found) {
+      selectedBody = found;
+      document.getElementById('delete-btn').disabled = false;
+    } else {
+      selectedBody = null;
+      document.getElementById('delete-btn').disabled = true;
+    }
+  });
+
+  // 右键物体弹窗属性
+  canvas.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    let found = Query.point(bodies, {x:x,y:y}).find(b=>!b.isStatic);
+    if(found) {
+      showAttrModal(found);
+    }
+    return false;
+  });
+
+  // 场景保存与导入
+  document.getElementById('save-btn').onclick = function() {
+    let state = {
+      bodies: bodies.filter(b=>!b.isStatic).map(b=>{
+        let shape = "fromVertices";
+        if(b.label.indexOf('Rectangle')!==-1) shape = "rectangle";
+        else if(b.label.indexOf('Circle')!==-1) shape = "circle";
+        else if(b.label.indexOf('Polygon')!==-1) shape = "polygon";
+        else if(b.label.indexOf('Trapezoid')!==-1) shape = "trapezoid";
+        return {
+          shape: shape,
+          position: b.position,
+          angle: b.angle,
+          velocity: b.velocity,
+          mass: b.mass,
+          render: b.render,
+          params: {
+            width: b.bounds.max.x-b.bounds.min.x,
+            height: b.bounds.max.y-b.bounds.min.y,
+            radius: (b.circleRadius||0)
+          }
+        };
+      })
+    };
+    let blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url; a.download = "scene.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  document.getElementById('load-btn').onclick = function() {
+    document.getElementById('file-input').click();
+  };
+  document.getElementById('file-input').onchange = function(e) {
+    let f = e.target.files[0];
+    if(!f) return;
+    let reader = new FileReader();
+    reader.onload = function(ev) {
+      let state = JSON.parse(ev.target.result);
+      clearAllBodies();
+      for(let b of state.bodies) {
+        let {shape,position,angle,velocity,render,params} = b;
+        let inst = null;
+        if(shape==="rectangle") inst = Bodies.rectangle(position.x, position.y, params.width, params.height, {angle,render});
+        else if(shape==="circle") inst = Bodies.circle(position.x, position.y, params.radius, {angle,render});
+        else if(shape==="polygon") inst = Bodies.polygon(position.x, position.y, 5, params.radius, {angle,render});
+        else if(shape==="trapezoid") inst = Bodies.trapezoid(position.x, position.y, params.width, params.height, 0.5, {angle,render});
+        else if(shape==="fromVertices") inst = Bodies.fromVertices(position.x, position.y, Vertices.fromPath("0 30 12 12 30 0 12 -12 0 -30 -12 -12 -30 0 -12 12"), {angle,render}, true);
+        if(inst) {
+          World.add(world, inst);
+          bodies.push(inst);
+          Body.setVelocity(inst, velocity);
+          inst.mass = b.mass;
+        }
+      }
+    };
+    reader.readAsText(f);
   };
 
   Events.on(mouseConstraint, 'startdrag', function(e) {
