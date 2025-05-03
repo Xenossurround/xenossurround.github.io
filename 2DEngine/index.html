@@ -71,6 +71,12 @@
       #ui-panel select { min-width: 110px;}
       #ui-panel { touch-action: none; }
     }
+    /* 批量选区可视化 */
+    #selection-canvas {
+      position: absolute;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      z-index: 8; pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -110,8 +116,15 @@
       <button id="reset-btn">重置场景</button>
       <button id="clear-btn">清空物体</button>
     </div>
+    <div class="group">
+      <label><input type="checkbox" id="batch-mode"> 批量填充</label>
+      <label>方块边长:
+        <input type="number" id="batch-size" min="10" max="100" value="30" style="width:52px;">
+      </label>
+    </div>
   </div>
   <canvas id="world-canvas"></canvas>
+  <canvas id="selection-canvas"></canvas>
 
   <script src="matter.js"></script>
   <script>
@@ -186,6 +199,7 @@
   })();
 
   // =========== Matter.js 主逻辑 ===========
+
   const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
 
   let engine = Engine.create(), world = engine.world;
@@ -194,15 +208,18 @@
   let uiPanel = document.getElementById('ui-panel');
   let bgColor = "#222233";
   const canvas = document.getElementById('world-canvas');
+  const selectionCanvas = document.getElementById('selection-canvas');
 
   function resizeCanvas() {
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = cssWidth * dpr;
-    canvas.height = cssHeight * dpr;
-    canvas.style.width = cssWidth + "px";
-    canvas.style.height = cssHeight + "px";
+    [canvas, selectionCanvas].forEach(cv=>{
+      cv.width = cssWidth * dpr;
+      cv.height = cssHeight * dpr;
+      cv.style.width = cssWidth + "px";
+      cv.style.height = cssHeight + "px";
+    });
     render.options.width = canvas.width;
     render.options.height = canvas.height;
     render.canvas.width = canvas.width;
@@ -267,7 +284,87 @@
   Events.on(mouseConstraint, 'mousedown', function(e) {
     lastPointerDownWasOnBody = !!mouseConstraint.body;
   });
+
+  // --------- 批量填充逻辑 ---------
+  let batchMode = false;
+  let batchSize = 30;
+  let isSelecting = false;
+  let selectStart = null, selectEnd = null;
+
+  const batchCheckbox = document.getElementById('batch-mode');
+  const batchSizeInput = document.getElementById('batch-size');
+  batchCheckbox.onchange = () => batchMode = batchCheckbox.checked;
+  batchSizeInput.oninput = e => batchSize = Math.max(10, Math.min(100, parseInt(e.target.value) || 30));
+
+  function clearSelectionRect() {
+    const ctx = selectionCanvas.getContext('2d');
+    ctx.clearRect(0,0,selectionCanvas.width,selectionCanvas.height);
+  }
+
+  function drawSelectionRect() {
+    clearSelectionRect();
+    if (!isSelecting || !selectStart || !selectEnd) return;
+    const ctx = selectionCanvas.getContext('2d');
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    const x = Math.min(selectStart.x, selectEnd.x);
+    const y = Math.min(selectStart.y, selectEnd.y);
+    const w = Math.abs(selectEnd.x - selectStart.x);
+    const h = Math.abs(selectEnd.y - selectStart.y);
+    ctx.strokeStyle = "rgba(90,180,255,0.85)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x,y,w,h);
+    ctx.fillStyle = "rgba(90,180,255,0.15)";
+    ctx.fillRect(x,y,w,h);
+    ctx.restore();
+  }
+
+  selectionCanvas.addEventListener('mousedown', function(e) {
+    if (!batchMode) return;
+    isSelecting = true;
+    const rect = selectionCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    selectStart = {
+      x: (e.clientX - rect.left) * dpr,
+      y: (e.clientY - rect.top) * dpr
+    };
+    selectEnd = {...selectStart};
+    drawSelectionRect();
+  });
+  selectionCanvas.addEventListener('mousemove', function(e) {
+    if (!isSelecting) return;
+    const rect = selectionCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    selectEnd = {
+      x: (e.clientX - rect.left) * dpr,
+      y: (e.clientY - rect.top) * dpr
+    };
+    drawSelectionRect();
+  });
+  selectionCanvas.addEventListener('mouseup', function(e) {
+    if (!isSelecting) return;
+    isSelecting = false;
+    drawSelectionRect();
+    // 计算选区范围
+    const x0 = Math.min(selectStart.x, selectEnd.x), x1 = Math.max(selectStart.x, selectEnd.x);
+    const y0 = Math.min(selectStart.y, selectEnd.y), y1 = Math.max(selectStart.y, selectEnd.y);
+    const canvasW = canvas.width, canvasH = canvas.height;
+    for(let x = x0 + batchSize/2; x + batchSize/2 <= x1; x += batchSize) {
+      for(let y = y0 + batchSize/2; y + batchSize/2 <= y1; y += batchSize) {
+        if(x - batchSize/2 < 0 || x + batchSize/2 > canvasW || y - batchSize/2 < 0 || y + batchSize/2 > canvasH) continue;
+        addShapeAt(x, y, "rectangle", batchSize, batchSize);
+      }
+    }
+    clearSelectionRect();
+  });
+  // 禁止canvas下层默认事件（避免拖动时误触生成单个物体）
+  selectionCanvas.addEventListener('mousedown', e => { if (batchMode) e.preventDefault(); });
+  selectionCanvas.addEventListener('mouseup', e => { if (batchMode) e.preventDefault(); });
+  selectionCanvas.addEventListener('mousemove', e => { if (batchMode) e.preventDefault(); });
+
+  // 普通单个物体生成
   canvas.addEventListener('mouseup', function(e) {
+    if(batchMode) return; // 批量模式交给selectionCanvas
     let uiRect = uiPanel.getBoundingClientRect();
     if (
       e.clientX >= uiRect.left && e.clientX <= uiRect.right &&
@@ -386,15 +483,21 @@
     if(type==="float") return parseFloat(v.value);
     return v.value ? Number(v.value) : undefined;
   }
-  function addShapeAt(x, y) {
-    let type = document.getElementById('shape-type').value;
+
+  // 支持批量时强制参数
+  function addShapeAt(x, y, forceType = null, forceW = null, forceH = null) {
+    let type = forceType || document.getElementById('shape-type').value;
     let color = document.getElementById('color-picker').value;
     let shape, params = paramList[type] || [], opt = {};
     params.forEach(p=>{ opt[p.name] = getField(p.name); });
-    if(type==="rectangle") {
-      shape = Bodies.rectangle(x, y, opt.width, opt.height, {
-        angle: (opt.angle||0) * Math.PI/180,
-        density: opt.density, friction: opt.friction, restitution: opt.restitution,
+    if(type==="rectangle" || forceType==="rectangle") {
+      let width = forceW || opt.width;
+      let height = forceH || opt.height;
+      let angle = (opt.angle||0) * Math.PI/180;
+      let density = opt.density||0.001, friction = opt.friction||0.1, restitution = opt.restitution||0.3;
+      shape = Bodies.rectangle(x, y, width, height, {
+        angle: angle,
+        density: density, friction: friction, restitution: restitution,
         render: { fillStyle: color }
       });
       bodies.push(shape); World.add(world, shape);
@@ -506,6 +609,19 @@
 
   resizeCanvas();
   renderParamFields(currentShape);
+
+  // 使批量选区canvas始终在主canvas之上并同步尺寸
+  window.addEventListener('resize', resizeCanvas);
+  // 初始化时设置canvas尺寸
+  resizeCanvas();
+
+  // 鼠标离开canvas时自动结束选区
+  selectionCanvas.addEventListener('mouseleave', function() {
+    if(isSelecting) {
+      isSelecting = false;
+      clearSelectionRect();
+    }
+  });
   </script>
 </body>
 </html>
