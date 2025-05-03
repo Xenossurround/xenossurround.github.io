@@ -75,12 +75,10 @@
       left: 0; top: 0; width: 100vw; height: 100vh;
       z-index: 8; pointer-events: none;
     }
-    /* 用户体验优化：面板半透明自动收缩 */
     #ui-panel.inactive {
       opacity: 0.5 !important;
       transition: opacity 0.3s;
     }
-    /* 物体属性弹窗 */
     #attr-modal-bg {
       position: fixed; left:0; top:0; width:100vw; height:100vh; z-index:99; background:rgba(0,0,0,0.18); display:none;
     }
@@ -98,7 +96,6 @@
     #save-load-btns {margin-left:8px;}
     #save-btn, #load-btn {background:#fff;color:#00aaff;border:1px solid #00aaff;border-radius:5px;padding:5px 12px;font-size:15px;cursor:pointer;margin-right:4px;}
     #save-btn:hover, #load-btn:hover {background:#00aaff;color:#fff;}
-    /* 动能/重心文本（canvas渲染，不用CSS） */
   </style>
 </head>
 <body>
@@ -354,22 +351,6 @@
   }
   requestAnimationFrame(customRender);
 
-  // 物体创建动画
-  function playCreateAnim(body) {
-    let t = 0;
-    let origScale = 1;
-    function animate() {
-      if(t>1) { Body.scale(body, origScale, origScale); return; }
-      let s = 1 + 0.7*Math.exp(-3*t)*Math.sin(10*t);
-      let nowScale = s/origScale;
-      Body.scale(body, nowScale, nowScale);
-      origScale = s;
-      t += 0.08;
-      requestAnimationFrame(animate);
-    }
-    animate();
-  }
-
   Render.run(render);
 
   function setBgColor(color) {
@@ -489,8 +470,7 @@
       for(let x = x0 + batchSize/2; x + batchSize/2 <= x1; x += batchSize) {
         for(let y = y0 + batchSize/2; y + batchSize/2 <= y1; y += batchSize) {
           if(x - batchSize/2 < 0 || x + batchSize/2 > canvasW || y - batchSize/2 < 0 || y + batchSize/2 > canvasH) continue;
-          let b = addShapeAt(x, y, "rectangle", batchSize, batchSize);
-          playCreateAnim(b);
+          addShapeAt(x, y, "rectangle", batchSize, batchSize);
         }
       }
     } else if(groupMode) {
@@ -530,8 +510,7 @@
     const dpr = window.devicePixelRatio || 1;
     const x = (e.clientX - rect.left) * dpr;
     const y = (e.clientY - rect.top) * dpr;
-    let b = addShapeAt(x, y);
-    playCreateAnim(b);
+    addShapeAt(x, y);
   });
 
   // 物体参数控件定义
@@ -542,20 +521,23 @@
       {name: "angle", label: "角度", type: "number", min: 0, max: 360, value: 0, step:1},
       {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
       {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.1, step:0.01},
-      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.3, step:0.01}
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.3, step:0.01},
+      {name: "alpha", label: "透明度", type: "number", min: 0, max: 1, value: 1, step: 0.01}
     ],
     circle: [
       {name: "radius", label: "半径", type: "number", min: 10, max: 120, value: 45},
       {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
       {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.05, step:0.01},
-      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.45, step:0.01}
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.45, step:0.01},
+      {name: "alpha", label: "透明度", type: "number", min: 0, max: 1, value: 1, step: 0.01}
     ],
     polygon: [
       {name: "sides", label: "边数", type: "number", min:3, max:12, value:5, step:1},
       {name: "radius", label: "半径", type: "number", min:10, max:80, value:36},
       {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
       {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.08, step:0.01},
-      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.4, step:0.01}
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.4, step:0.01},
+      {name: "alpha", label: "透明度", type: "number", min: 0, max: 1, value: 1, step: 0.01}
     ],
     trapezoid: [
       {name: "width", label: "上宽", type: "number", min:30, max:200, value:120},
@@ -563,13 +545,15 @@
       {name: "slope", label: "斜率", type: "number", min:0.2, max:1, value:0.5, step:0.01},
       {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
       {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.12, step:0.01},
-      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.38, step:0.01}
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.38, step:0.01},
+      {name: "alpha", label: "透明度", type: "number", min: 0, max: 1, value: 1, step: 0.01}
     ],
     fromVertices: [
       {name: "scale", label: "缩放", type: "number", min:0.2, max:2, value:1, step:0.01},
       {name: "density", label: "密度", type: "number", min: 0.0001, max: 0.2, value:0.001, step:0.0001},
       {name: "friction", label: "摩擦", type: "number", min: 0, max: 1, value:0.15, step:0.01},
-      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.36, step:0.01}
+      {name: "restitution", label: "弹性", type: "number", min: 0, max: 1, value:0.36, step:0.01},
+      {name: "alpha", label: "透明度", type: "number", min: 0, max: 1, value: 1, step: 0.01}
     ],
     composite: [
       {name: "balls", label: "球数", type: "number", min:3, max:9, value:5, step:1},
@@ -593,15 +577,22 @@
     ]
   };
   const paramHelpTxt = {
-    rectangle: "矩形可设置宽高、角度、密度、摩擦、弹性。",
-    circle: "圆形可设置半径、密度、摩擦、弹性。",
-    polygon: "多边形可设置边数、半径、密度、摩擦、弹性。",
-    trapezoid: "梯形可设置宽、高、斜率、密度、摩擦、弹性。",
-    fromVertices: "自定义多边形为五角星，可缩放。",
+    rectangle: "矩形可设置宽高、角度、密度、摩擦、弹性、透明度。",
+    circle: "圆形可设置半径、密度、摩擦、弹性、透明度。",
+    polygon: "多边形可设置边数、半径、密度、摩擦、弹性、透明度。",
+    trapezoid: "梯形可设置宽、高、斜率、密度、摩擦、弹性、透明度。",
+    fromVertices: "自定义多边形为五角星，可缩放、透明度。",
     composite: "牛顿摆复合体，可设置球数、半径、距离、密度。",
     constraint: "连杆约束为两个球之间的弹簧，可设置长度、球半径、刚度。",
     softbody: "软体网格，可设置行列、间隔、球半径、密度。"
   };
+
+  function hexToRgba(hex, alpha) {
+    let r = parseInt(hex.slice(1,3),16);
+    let g = parseInt(hex.slice(3,5),16);
+    let b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
 
   function renderParamFields(type) {
     let params = paramList[type] || [];
@@ -642,6 +633,8 @@
     let color = document.getElementById('color-picker').value;
     let shape, params = paramList[type] || [], opt = {};
     params.forEach(p=>{ opt[p.name] = getField(p.name); });
+    let alpha = (typeof opt.alpha === "number" && !isNaN(opt.alpha)) ? opt.alpha : 1;
+    let fillColor = hexToRgba(color, alpha);
     if(type==="rectangle" || forceType==="rectangle") {
       let width = forceW || opt.width;
       let height = forceH || opt.height;
@@ -650,28 +643,28 @@
       shape = Bodies.rectangle(x, y, width, height, {
         angle: angle,
         density: density, friction: friction, restitution: restitution,
-        render: { fillStyle: color }
+        render: { fillStyle: fillColor }
       });
       bodies.push(shape); World.add(world, shape);
       return shape;
     } else if(type==="circle") {
       shape = Bodies.circle(x, y, opt.radius, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
-        render: { fillStyle: color },
+        render: { fillStyle: fillColor },
       });
       bodies.push(shape); World.add(world, shape);
       return shape;
     } else if(type==="polygon") {
       shape = Bodies.polygon(x, y, Math.max(3,opt.sides), opt.radius, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
-        render: { fillStyle: color }
+        render: { fillStyle: fillColor }
       });
       bodies.push(shape); World.add(world, shape);
       return shape;
     } else if(type==="trapezoid") {
       shape = Bodies.trapezoid(x, y, opt.width, opt.height, opt.slope, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
-        render: { fillStyle: color }
+        render: { fillStyle: fillColor }
       });
       bodies.push(shape); World.add(world, shape);
       return shape;
@@ -680,7 +673,7 @@
       let scaled = verts.map(v => ({x: v.x*opt.scale, y: v.y*opt.scale}));
       shape = Bodies.fromVertices(x, y, scaled, {
         density: opt.density, friction: opt.friction, restitution: opt.restitution,
-        render: { fillStyle: color }
+        render: { fillStyle: fillColor }
       }, true);
       bodies.push(shape); World.add(world, shape);
       return shape;
