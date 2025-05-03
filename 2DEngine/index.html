@@ -73,7 +73,7 @@
     #selection-canvas {
       position: absolute;
       left: 0; top: 0; width: 100vw; height: 100vh;
-      z-index: 8; pointer-events: auto;
+      z-index: 8; pointer-events: none;
     }
   </style>
 </head>
@@ -144,6 +144,7 @@
   }
   setPanelInitialPosition();
   window.addEventListener('resize', setPanelInitialPosition);
+
   (function() {
     let uiPanel = document.getElementById('ui-panel');
     let dragHandle = document.getElementById('ui-drag-handle');
@@ -192,6 +193,7 @@
   })();
 
   const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
+
   let engine = Engine.create(), world = engine.world;
   let bodies = [], constraints = [], composites = [];
   let currentColor = "#00aaff", isPaused = false, currentShape = "rectangle";
@@ -199,6 +201,7 @@
   let bgColor = "#222233";
   const canvas = document.getElementById('world-canvas');
   const selectionCanvas = document.getElementById('selection-canvas');
+
   function resizeCanvas() {
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
@@ -218,6 +221,7 @@
     setBgColor(bgColor);
   }
   window.addEventListener('resize', resizeCanvas);
+
   const render = Render.create({
     canvas: canvas,
     engine: engine,
@@ -230,6 +234,7 @@
     }
   });
   Render.run(render);
+
   function setBgColor(color) {
     bgColor = color;
     render.options.background = bgColor;
@@ -238,8 +243,10 @@
   }
   document.getElementById('bg-color-picker').oninput = e => setBgColor(e.target.value);
   setBgColor(bgColor);
+
   const runner = Runner.create();
   Runner.run(runner, engine);
+
   function createBounds() {
     const dpr = window.devicePixelRatio || 1;
     const w = window.innerWidth * dpr, h = window.innerHeight * dpr;
@@ -258,6 +265,7 @@
     bounds = createBounds();
     World.add(world, bounds);
   });
+
   const mouse = Mouse.create(render.canvas);
   let lastPointerDownWasOnBody = false;
   const mouseConstraint = MouseConstraint.create(engine, {
@@ -268,18 +276,34 @@
   Events.on(mouseConstraint, 'mousedown', function(e) {
     lastPointerDownWasOnBody = !!mouseConstraint.body;
   });
+
+  // 批量模式下，canvas可点，非批量时pointer-events:none
+  const batchCheckbox = document.getElementById('batch-mode');
+  function updateSelectionCanvasEvents() {
+    if (batchCheckbox.checked) {
+      selectionCanvas.style.pointerEvents = "auto";
+    } else {
+      selectionCanvas.style.pointerEvents = "none";
+    }
+  }
+  batchCheckbox.addEventListener('change', updateSelectionCanvasEvents);
+  updateSelectionCanvasEvents();
+
+  // --------- 批量填充逻辑 ---------
   let batchMode = false;
   let batchSize = 30;
   let isSelecting = false;
   let selectStart = null, selectEnd = null;
-  const batchCheckbox = document.getElementById('batch-mode');
+
   const batchSizeInput = document.getElementById('batch-size');
   batchCheckbox.onchange = () => batchMode = batchCheckbox.checked;
   batchSizeInput.oninput = e => batchSize = Math.max(10, Math.min(100, parseInt(e.target.value) || 30));
+
   function clearSelectionRect() {
     const ctx = selectionCanvas.getContext('2d');
     ctx.clearRect(0,0,selectionCanvas.width,selectionCanvas.height);
   }
+
   function drawSelectionRect() {
     clearSelectionRect();
     if (!isSelecting || !selectStart || !selectEnd) return;
@@ -297,6 +321,7 @@
     ctx.fillRect(x,y,w,h);
     ctx.restore();
   }
+
   selectionCanvas.addEventListener('mousedown', function(e) {
     if (!batchMode) return;
     isSelecting = true;
@@ -340,6 +365,8 @@
       clearSelectionRect();
     }
   });
+
+  // 普通单个物体生成
   canvas.addEventListener('mouseup', function(e) {
     if(batchMode) return;
     let uiRect = uiPanel.getBoundingClientRect();
@@ -357,6 +384,8 @@
     const y = (e.clientY - rect.top) * dpr;
     addShapeAt(x, y);
   });
+
+  // 物体参数控件定义
   const paramList = {
     rectangle: [
       {name: "width", label: "宽", type: "number", min: 20, max: 300, value: 120},
@@ -424,6 +453,7 @@
     constraint: "连杆约束为两个球之间的弹簧，可设置长度、球半径、刚度。",
     softbody: "软体网格，可设置行列、间隔、球半径、密度。"
   };
+
   function renderParamFields(type) {
     let params = paramList[type] || [];
     let pf = document.getElementById('param-fields');
@@ -449,6 +479,7 @@
     currentShape = this.value;
     renderParamFields(currentShape);
   };
+
   function getField(name, type=null) {
     let v = document.getElementById('param-' + name);
     if(!v) return undefined;
@@ -456,6 +487,7 @@
     if(type==="float") return parseFloat(v.value);
     return v.value ? Number(v.value) : undefined;
   }
+
   function addShapeAt(x, y, forceType = null, forceW = null, forceH = null) {
     let type = forceType || document.getElementById('shape-type').value;
     let color = document.getElementById('color-picker').value;
@@ -523,6 +555,7 @@
       composites.push(soft); World.add(world, soft);
     }
   }
+
   document.getElementById('color-picker').oninput = e => { currentColor = e.target.value; };
   document.getElementById('gravity-slider').oninput = function() {
     const g = parseFloat(this.value);
@@ -530,6 +563,7 @@
     document.getElementById('gravity-value').innerText = g.toFixed(2);
   };
   document.getElementById('gravity-value').innerText = engine.world.gravity.y.toFixed(2);
+
   document.getElementById('pause-btn').onclick = () => {
     if (!isPaused) {
       Runner.stop(runner);
@@ -562,6 +596,7 @@
     constraints = [];
     composites = [];
   };
+
   Events.on(mouseConstraint, 'startdrag', function(e) {
     if (e.body && !e.body.isStatic) {
       e.body.render.strokeStyle = "#fff";
@@ -574,6 +609,7 @@
       e.body.render.lineWidth = null;
     }
   });
+
   resizeCanvas();
   renderParamFields(currentShape);
   window.addEventListener('resize', resizeCanvas);
