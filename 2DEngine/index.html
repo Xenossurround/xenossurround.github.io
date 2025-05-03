@@ -29,7 +29,6 @@
     .help-tip {font-size: 11px; color: #888; margin-top: 0; margin-bottom: 3px; line-height: 1.1;}
     #world-canvas { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; display: block; z-index: 1; }
     #ui-panel { position: absolute; z-index: 10; min-width: 320px; transition: all .25s; }
-    /* 移动端响应式样式 */
     @media (max-width: 800px), (pointer: coarse) {
       #ui-panel {
         left: 0 !important;
@@ -71,11 +70,10 @@
       #ui-panel select { min-width: 110px;}
       #ui-panel { touch-action: none; }
     }
-    /* 批量选区可视化 */
     #selection-canvas {
       position: absolute;
       left: 0; top: 0; width: 100vw; height: 100vh;
-      z-index: 8; pointer-events: auto; /* 修正为 auto 以支持事件 */
+      z-index: 8; pointer-events: auto;
     }
   </style>
 </head>
@@ -125,10 +123,8 @@
   </div>
   <canvas id="world-canvas"></canvas>
   <canvas id="selection-canvas"></canvas>
-
   <script src="matter.js"></script>
   <script>
-  // 设备检测和面板自适应
   function isMobile() {
     return /Android|iPhone|iPad|iPod|Mobile|Tablet|Phone|Mobi/i.test(navigator.userAgent) || window.innerWidth <= 800;
   }
@@ -148,14 +144,11 @@
   }
   setPanelInitialPosition();
   window.addEventListener('resize', setPanelInitialPosition);
-
-  // 拖动面板支持，自适应
   (function() {
     let uiPanel = document.getElementById('ui-panel');
     let dragHandle = document.getElementById('ui-drag-handle');
     let dragging = false, offsetX = 0, offsetY = 0;
     if(isMobile()) {
-      // 移动端：点击收起/展开面板
       let collapsed = false;
       dragHandle.addEventListener('click', function() {
         collapsed = !collapsed;
@@ -198,10 +191,7 @@
     uiPanel.addEventListener('mousedown', e => e.stopPropagation());
   })();
 
-  // =========== Matter.js 主逻辑 ===========
-
   const { Engine, Render, Runner, World, Bodies, Body, Constraint, Composite, Composites, Events, Mouse, MouseConstraint, Vertices } = Matter;
-
   let engine = Engine.create(), world = engine.world;
   let bodies = [], constraints = [], composites = [];
   let currentColor = "#00aaff", isPaused = false, currentShape = "rectangle";
@@ -209,7 +199,6 @@
   let bgColor = "#222233";
   const canvas = document.getElementById('world-canvas');
   const selectionCanvas = document.getElementById('selection-canvas');
-
   function resizeCanvas() {
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
@@ -229,7 +218,6 @@
     setBgColor(bgColor);
   }
   window.addEventListener('resize', resizeCanvas);
-
   const render = Render.create({
     canvas: canvas,
     engine: engine,
@@ -242,7 +230,6 @@
     }
   });
   Render.run(render);
-
   function setBgColor(color) {
     bgColor = color;
     render.options.background = bgColor;
@@ -251,10 +238,8 @@
   }
   document.getElementById('bg-color-picker').oninput = e => setBgColor(e.target.value);
   setBgColor(bgColor);
-
   const runner = Runner.create();
   Runner.run(runner, engine);
-
   function createBounds() {
     const dpr = window.devicePixelRatio || 1;
     const w = window.innerWidth * dpr, h = window.innerHeight * dpr;
@@ -273,7 +258,6 @@
     bounds = createBounds();
     World.add(world, bounds);
   });
-
   const mouse = Mouse.create(render.canvas);
   let lastPointerDownWasOnBody = false;
   const mouseConstraint = MouseConstraint.create(engine, {
@@ -284,23 +268,18 @@
   Events.on(mouseConstraint, 'mousedown', function(e) {
     lastPointerDownWasOnBody = !!mouseConstraint.body;
   });
-
-  // --------- 批量填充逻辑 ---------
   let batchMode = false;
   let batchSize = 30;
   let isSelecting = false;
   let selectStart = null, selectEnd = null;
-
   const batchCheckbox = document.getElementById('batch-mode');
   const batchSizeInput = document.getElementById('batch-size');
   batchCheckbox.onchange = () => batchMode = batchCheckbox.checked;
   batchSizeInput.oninput = e => batchSize = Math.max(10, Math.min(100, parseInt(e.target.value) || 30));
-
   function clearSelectionRect() {
     const ctx = selectionCanvas.getContext('2d');
     ctx.clearRect(0,0,selectionCanvas.width,selectionCanvas.height);
   }
-
   function drawSelectionRect() {
     clearSelectionRect();
     if (!isSelecting || !selectStart || !selectEnd) return;
@@ -318,7 +297,6 @@
     ctx.fillRect(x,y,w,h);
     ctx.restore();
   }
-
   selectionCanvas.addEventListener('mousedown', function(e) {
     if (!batchMode) return;
     isSelecting = true;
@@ -345,7 +323,6 @@
     if (!isSelecting) return;
     isSelecting = false;
     drawSelectionRect();
-    // 计算选区范围
     const x0 = Math.min(selectStart.x, selectEnd.x), x1 = Math.max(selectStart.x, selectEnd.x);
     const y0 = Math.min(selectStart.y, selectEnd.y), y1 = Math.max(selectStart.y, selectEnd.y);
     const canvasW = canvas.width, canvasH = canvas.height;
@@ -363,10 +340,8 @@
       clearSelectionRect();
     }
   });
-
-  // 普通单个物体生成
   canvas.addEventListener('mouseup', function(e) {
-    if(batchMode) return; // 批量模式交给selectionCanvas
+    if(batchMode) return;
     let uiRect = uiPanel.getBoundingClientRect();
     if (
       e.clientX >= uiRect.left && e.clientX <= uiRect.right &&
@@ -382,8 +357,6 @@
     const y = (e.clientY - rect.top) * dpr;
     addShapeAt(x, y);
   });
-
-  // 物体参数控件定义
   const paramList = {
     rectangle: [
       {name: "width", label: "宽", type: "number", min: 20, max: 300, value: 120},
@@ -451,7 +424,6 @@
     constraint: "连杆约束为两个球之间的弹簧，可设置长度、球半径、刚度。",
     softbody: "软体网格，可设置行列、间隔、球半径、密度。"
   };
-
   function renderParamFields(type) {
     let params = paramList[type] || [];
     let pf = document.getElementById('param-fields');
@@ -477,7 +449,6 @@
     currentShape = this.value;
     renderParamFields(currentShape);
   };
-
   function getField(name, type=null) {
     let v = document.getElementById('param-' + name);
     if(!v) return undefined;
@@ -485,8 +456,6 @@
     if(type==="float") return parseFloat(v.value);
     return v.value ? Number(v.value) : undefined;
   }
-
-  // 支持批量时强制参数
   function addShapeAt(x, y, forceType = null, forceW = null, forceH = null) {
     let type = forceType || document.getElementById('shape-type').value;
     let color = document.getElementById('color-picker').value;
@@ -554,7 +523,6 @@
       composites.push(soft); World.add(world, soft);
     }
   }
-
   document.getElementById('color-picker').oninput = e => { currentColor = e.target.value; };
   document.getElementById('gravity-slider').oninput = function() {
     const g = parseFloat(this.value);
@@ -562,7 +530,6 @@
     document.getElementById('gravity-value').innerText = g.toFixed(2);
   };
   document.getElementById('gravity-value').innerText = engine.world.gravity.y.toFixed(2);
-
   document.getElementById('pause-btn').onclick = () => {
     if (!isPaused) {
       Runner.stop(runner);
@@ -595,7 +562,6 @@
     constraints = [];
     composites = [];
   };
-
   Events.on(mouseConstraint, 'startdrag', function(e) {
     if (e.body && !e.body.isStatic) {
       e.body.render.strokeStyle = "#fff";
@@ -608,15 +574,16 @@
       e.body.render.lineWidth = null;
     }
   });
-
   resizeCanvas();
   renderParamFields(currentShape);
-
-  // 使批量选区canvas始终在主canvas之上并同步尺寸
   window.addEventListener('resize', resizeCanvas);
-  // 初始化时设置canvas尺寸
   resizeCanvas();
-
+  selectionCanvas.addEventListener('mouseleave', function() {
+    if(isSelecting) {
+      isSelecting = false;
+      clearSelectionRect();
+    }
+  });
   </script>
 </body>
 </html>
