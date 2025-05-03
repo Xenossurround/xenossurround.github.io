@@ -277,7 +277,7 @@
     lastPointerDownWasOnBody = !!mouseConstraint.body;
   });
 
-  // 批量模式下，canvas可点，非批量时pointer-events:none
+  // 动态控制 selection-canvas pointer-events
   const batchCheckbox = document.getElementById('batch-mode');
   function updateSelectionCanvasEvents() {
     if (batchCheckbox.checked) {
@@ -289,14 +289,11 @@
   batchCheckbox.addEventListener('change', updateSelectionCanvasEvents);
   updateSelectionCanvasEvents();
 
-  // --------- 批量填充逻辑 ---------
-  let batchMode = false;
+  // 批量填充逻辑
   let batchSize = 30;
   let isSelecting = false;
   let selectStart = null, selectEnd = null;
-
   const batchSizeInput = document.getElementById('batch-size');
-  batchCheckbox.onchange = () => batchMode = batchCheckbox.checked;
   batchSizeInput.oninput = e => batchSize = Math.max(10, Math.min(100, parseInt(e.target.value) || 30));
 
   function clearSelectionRect() {
@@ -323,7 +320,7 @@
   }
 
   selectionCanvas.addEventListener('mousedown', function(e) {
-    if (!batchMode) return;
+    if (!batchCheckbox.checked) return;
     isSelecting = true;
     const rect = selectionCanvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -368,7 +365,7 @@
 
   // 普通单个物体生成
   canvas.addEventListener('mouseup', function(e) {
-    if(batchMode) return;
+    if(document.getElementById('batch-mode').checked) return;
     let uiRect = uiPanel.getBoundingClientRect();
     if (
       e.clientX >= uiRect.left && e.clientX <= uiRect.right &&
