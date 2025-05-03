@@ -75,7 +75,7 @@
     #selection-canvas {
       position: absolute;
       left: 0; top: 0; width: 100vw; height: 100vh;
-      z-index: 8; pointer-events: none;
+      z-index: 8; pointer-events: auto; /* 修正为 auto 以支持事件 */
     }
   </style>
 </head>
@@ -357,10 +357,12 @@
     }
     clearSelectionRect();
   });
-  // 禁止canvas下层默认事件（避免拖动时误触生成单个物体）
-  selectionCanvas.addEventListener('mousedown', e => { if (batchMode) e.preventDefault(); });
-  selectionCanvas.addEventListener('mouseup', e => { if (batchMode) e.preventDefault(); });
-  selectionCanvas.addEventListener('mousemove', e => { if (batchMode) e.preventDefault(); });
+  selectionCanvas.addEventListener('mouseleave', function() {
+    if(isSelecting) {
+      isSelecting = false;
+      clearSelectionRect();
+    }
+  });
 
   // 普通单个物体生成
   canvas.addEventListener('mouseup', function(e) {
@@ -615,13 +617,6 @@
   // 初始化时设置canvas尺寸
   resizeCanvas();
 
-  // 鼠标离开canvas时自动结束选区
-  selectionCanvas.addEventListener('mouseleave', function() {
-    if(isSelecting) {
-      isSelecting = false;
-      clearSelectionRect();
-    }
-  });
   </script>
 </body>
 </html>
