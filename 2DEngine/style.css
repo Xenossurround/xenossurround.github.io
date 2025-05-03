@@ -85,3 +85,14 @@ body {
   z-index: 1;
   touch-action: none;
 }
+#selection-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 5; /* 大于#world-canvas的小于#ui-panel即可 */
+  pointer-events: auto;
+  touch-action: none;
+}
