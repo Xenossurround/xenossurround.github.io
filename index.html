@@ -1,70 +1,123 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>|—XenosMC—|</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>资源下载页面</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", sans-serif;
+      background: linear-gradient(to bottom right, #e0f0ff, #ffffff);
+      color: #1b3b6f;
+      transition: background 0.6s ease;
+    }
+
+    header {
+      background-color: #1b3b6f;
+      color: white;
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      padding: 2rem;
+      gap: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+      transition: all 0.5s ease;
+    }
+
+    .image-box {
+      flex: 1;
+      background-color: #f5faff;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .image-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .image-box:hover img {
+      transform: scale(1.03);
+    }
+
+    .content-box {
+      flex: 1;
+      background-color: #ffffff;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      transition: all 0.4s ease;
+    }
+
+    .content-box h2 {
+      color: #1b3b6f;
+      margin-bottom: 1rem;
+    }
+
+    .content-box p {
+      color: #333;
+      margin-bottom: 2rem;
+    }
+
+    .download-btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+      text-decoration: none;
+    }
+
+    .download-btn:hover {
+      background-color: #005ea6;
+      transform: scale(1.05);
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <div class="logo">bili_XenosMC</div>
-    <nav>
-      <a href="#home">首页</a>
-      <a href="#resources">资源库</a>
-      <a href="#about">关于我们(?</a>
-      <a href="#contact">联系</a>
-    </nav>
-  </header>
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-content">
-        <h1>XenosMC</h1>
-        <p>主页：https://space.bilibili.com/3493124221438600?spm_id_from=333.1007.0.0</p>
-        <form id="search-form">
-          <input type="text" id="search-input" placeholder="搜索资源...">
-          <button type="submit">搜索</button>
-        </form>
-      </div>
-      <div class="hero-animation"></div>
-    </section>
-    <section class="resources" id="resources">
-      <h2>所有资源</h2>
-      <div class="resource-list" id="resource-list">
-        <!-- 动态生成资源卡片 -->
-      </div>
-      <div class="pagination" id="pagination"></div>
-    </section>
-    <section class="about" id="about">
-      <h2>关于我们</h2>
-      <p>本免责声明所涉及的任何信息、观点、推测、理论、幻觉、错觉及其他存在与不存在的内容，均不保证其在任何时空、维度、平行宇宙中的准确性、完整性或时效性。任何因使用、误用或未使用本内容而导致的后果，包括但不限于物质损失、精神创伤、时间错位、维度塌陷、黑洞产生、宇宙终结、平行世界混乱、人际关系破裂、电脑蓝屏等，均与内容制作者、传播者、协作者、AI 及其母公司、所在星系或任何形式的实体无关。</p>
-    </section>
-    <section class="contact" id="contact">
-      <h2>联系我们</h2>
-      <form class="contact-form">
-        <input type="text" placeholder="您的姓名" required>
-        <input type="email" placeholder="您的邮箱" required>
-        <textarea placeholder="您的留言" required></textarea>
-        <button type="submit">发送</button>
-      </form>
-    </section>
-  </main>
-    <div style="text-align:center; margin: 2em 0;">
-    <a href="2DEngine" class="download-btn" style="font-size:1.15rem; padding:0.7em 2.2em; background:#6C63FF;">进入2D物理引擎演示</a>
-  </div>
-<footer>
-  <p>&copy; 亻尔 女子</p>
-</footer>
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="modal-close">&times;</span>
-      <h3 id="modal-title"></h3>
-      <p id="modal-desc"></p>
-      <a id="modal-download" href="#" class="download-btn" download>立即下载</a>
+  <header>资源下载中心</header>
+
+  <div class="container">
+    <div class="image-box">
+      <img src="https://via.placeholder.com/500x300.png?text=资源预览" alt="资源预览图" />
+    </div>
+    <div class="content-box">
+      <h2>资源名称：高级蓝色UI包</h2>
+      <p>这是一套以蓝色为主色调的现代UI组件资源，适用于Web和移动端项目。包含按钮、图标、输入框等元素。</p>
+      <a class="download-btn" href="#" onclick="triggerDownload()">立即下载</a>
     </div>
   </div>
-  <script src="script.js"></script>
+
+  <script>
+    function triggerDownload() {
+      const btn = document.querySelector('.download-btn');
+      btn.innerText = '下载中...';
+      btn.style.backgroundColor = '#1b3b6f';
+      btn.style.transform = 'scale(0.95)';
+
+      setTimeout(() => {
+        btn.innerText = '下载完成 ✔';
+        btn.style.backgroundColor = '#28a745';
+        btn.style.transform = 'scale(1)';
+      }, 2000);
+    }
+  </script>
 </body>
 </html>
