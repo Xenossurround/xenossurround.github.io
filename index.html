@@ -28,12 +28,22 @@
     header {
       background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
       color: var(--white);
-      padding: 1.2rem 2rem;
-      font-size: 1.8rem;
+      padding: 1.5rem 2rem;
+      font-size: 2rem;
       font-weight: bold;
       text-align: center;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
       letter-spacing: 1px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: all 0.4s ease;
+      animation: slideDown 0.8s ease;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .container {
@@ -58,6 +68,8 @@
       overflow: hidden;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
       transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+      background: #fff;
+      transform-style: preserve-3d;
     }
 
     .image-box img {
@@ -67,7 +79,7 @@
     }
 
     .image-box:hover {
-      transform: scale(1.03);
+      transform: perspective(1000px) rotateY(3deg) scale(1.03);
     }
 
     .content-box {
@@ -77,48 +89,100 @@
       padding: 2.5rem;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       transition: all 0.5s ease;
+      animation: fadeIn 1.2s ease;
     }
 
     .content-box h2 {
       color: var(--secondary-color);
       margin-bottom: 1rem;
-      font-size: 1.8rem;
+      font-size: 2rem;
+      animation: slideInLeft 0.8s ease;
     }
 
     .content-box p {
       color: #444;
-      font-size: 1rem;
-      line-height: 1.6;
+      font-size: 1.05rem;
+      line-height: 1.7;
       margin-bottom: 2.5rem;
+      animation: slideInLeft 1s ease;
+    }
+
+    @keyframes slideInLeft {
+      from { transform: translateX(-30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
 
     .download-btn {
       display: inline-block;
-      padding: 0.9rem 2rem;
+      padding: 1rem 2.2rem;
       background: linear-gradient(135deg, var(--primary-color), #00aaff);
       color: var(--white);
       border: none;
       border-radius: 2rem;
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       box-shadow: 0 6px 15px rgba(0, 122, 204, 0.3);
       transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+      animation: fadeIn 1.4s ease;
     }
 
     .download-btn:hover {
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 10px 20px rgba(0, 122, 204, 0.4);
+      transform: translateY(-4px) scale(1.06);
+      box-shadow: 0 12px 22px rgba(0, 122, 204, 0.4);
     }
 
     .download-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.96);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin: 4rem 5%;
+      animation: fadeIn 1s ease;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 1.25rem;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 1.5rem;
+    }
+
+    .card-content h3 {
+      margin-bottom: 0.75rem;
+      font-size: 1.25rem;
+      color: var(--secondary-color);
+    }
+
+    .card-content p {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 1.25rem;
     }
   </style>
 </head>
 <body>
-  <header>资源下载中心</header>
+  <header>🚀 资源下载中心</header>
 
   <div class="container">
     <div class="image-box">
@@ -130,6 +194,33 @@
       <a class="download-btn" href="#" onclick="triggerDownload(this)">立即下载</a>
     </div>
   </div>
+
+  <section class="card-grid">
+    <div class="card">
+      <img src="https://via.placeholder.com/400x200.png?text=资源A" alt="资源A" />
+      <div class="card-content">
+        <h3>资源A</h3>
+        <p>轻量级组件包，适合初学者和快速开发场景。</p>
+        <a class="download-btn" href="#" onclick="triggerDownload(this)">下载</a>
+      </div>
+    </div>
+    <div class="card">
+      <img src="https://via.placeholder.com/400x200.png?text=资源B" alt="资源B" />
+      <div class="card-content">
+        <h3>资源B</h3>
+        <p>进阶图标和插画素材，支持多平台和暗黑模式。</p>
+        <a class="download-btn" href="#" onclick="triggerDownload(this)">下载</a>
+      </div>
+    </div>
+    <div class="card">
+      <img src="https://via.placeholder.com/400x200.png?text=资源C" alt="资源C" />
+      <div class="card-content">
+        <h3>资源C</h3>
+        <p>完整UI系统设计模板，适配移动和桌面端。</p>
+        <a class="download-btn" href="#" onclick="triggerDownload(this)">下载</a>
+      </div>
+    </div>
+  </section>
 
   <script>
     function triggerDownload(btn) {
