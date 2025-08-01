@@ -5,89 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>资源下载页面</title>
   <style>
-    body {
+    :root {
+      --primary-color: #007acc;
+      --secondary-color: #1b3b6f;
+      --background-color: #f0f6fc;
+      --white: #ffffff;
+    }
+
+    * {
       margin: 0;
-      font-family: "Helvetica Neue", sans-serif;
-      background: linear-gradient(to bottom right, #e0f0ff, #ffffff);
-      color: #1b3b6f;
-      transition: background 0.6s ease;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+      background: var(--background-color);
+      color: var(--secondary-color);
+      overflow-x: hidden;
     }
 
     header {
-      background-color: #1b3b6f;
-      color: white;
-      padding: 1rem 2rem;
-      font-size: 1.5rem;
+      background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+      color: var(--white);
+      padding: 1.2rem 2rem;
+      font-size: 1.8rem;
       font-weight: bold;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      letter-spacing: 1px;
     }
 
     .container {
       display: flex;
       flex-direction: row;
-      padding: 2rem;
+      padding: 3rem 5%;
       gap: 2rem;
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
-      transition: all 0.5s ease;
+      align-items: center;
+      animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .image-box {
       flex: 1;
-      background-color: #f5faff;
-      border-radius: 1rem;
+      border-radius: 1.5rem;
       overflow: hidden;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s ease;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     .image-box img {
       width: 100%;
-      height: auto;
       display: block;
-      transition: transform 0.5s ease;
+      transition: transform 0.6s ease;
     }
 
-    .image-box:hover img {
+    .image-box:hover {
       transform: scale(1.03);
     }
 
     .content-box {
       flex: 1;
-      background-color: #ffffff;
-      border-radius: 1rem;
-      padding: 2rem;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-      transition: all 0.4s ease;
+      background-color: var(--white);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      transition: all 0.5s ease;
     }
 
     .content-box h2 {
-      color: #1b3b6f;
+      color: var(--secondary-color);
       margin-bottom: 1rem;
+      font-size: 1.8rem;
     }
 
     .content-box p {
-      color: #333;
-      margin-bottom: 2rem;
+      color: #444;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
     }
 
     .download-btn {
       display: inline-block;
-      padding: 0.75rem 1.5rem;
-      background-color: #007acc;
-      color: white;
+      padding: 0.9rem 2rem;
+      background: linear-gradient(135deg, var(--primary-color), #00aaff);
+      color: var(--white);
       border: none;
-      border-radius: 0.5rem;
+      border-radius: 2rem;
       font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s ease, transform 0.3s ease;
       text-decoration: none;
+      box-shadow: 0 6px 15px rgba(0, 122, 204, 0.3);
+      transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     .download-btn:hover {
-      background-color: #005ea6;
-      transform: scale(1.05);
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 20px rgba(0, 122, 204, 0.4);
+    }
+
+    .download-btn:active {
+      transform: scale(0.98);
     }
   </style>
 </head>
@@ -96,25 +122,26 @@
 
   <div class="container">
     <div class="image-box">
-      <img src="https://via.placeholder.com/500x300.png?text=资源预览" alt="资源预览图" />
+      <img src="https://via.placeholder.com/600x400.png?text=资源预览图" alt="资源预览图" />
     </div>
     <div class="content-box">
-      <h2>资源名称：高级蓝色UI包</h2>
-      <p>这是一套以蓝色为主色调的现代UI组件资源，适用于Web和移动端项目。包含按钮、图标、输入框等元素。</p>
-      <a class="download-btn" href="#" onclick="triggerDownload()">立即下载</a>
+      <h2>资源名称：高级蓝色UI套件</h2>
+      <p>这是一套现代风格、响应式设计的蓝色调UI组件集合。适用于网页、App 原型设计及生产级界面开发，含按钮、卡片、输入框、图表等。</p>
+      <a class="download-btn" href="#" onclick="triggerDownload(this)">立即下载</a>
     </div>
   </div>
 
   <script>
-    function triggerDownload() {
-      const btn = document.querySelector('.download-btn');
+    function triggerDownload(btn) {
       btn.innerText = '下载中...';
-      btn.style.backgroundColor = '#1b3b6f';
-      btn.style.transform = 'scale(0.95)';
+      btn.style.background = '#1b3b6f';
+      btn.style.boxShadow = '0 6px 15px rgba(27, 59, 111, 0.3)';
+      btn.style.transform = 'scale(0.97)';
 
       setTimeout(() => {
         btn.innerText = '下载完成 ✔';
-        btn.style.backgroundColor = '#28a745';
+        btn.style.background = '#28a745';
+        btn.style.boxShadow = '0 6px 15px rgba(40, 167, 69, 0.3)';
         btn.style.transform = 'scale(1)';
       }, 2000);
     }
